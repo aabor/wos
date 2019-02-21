@@ -1,0 +1,46 @@
+{
+  "tz": ["Europe/Moscow"],
+  "export": {
+    "fileFormat": [".rds"],
+    "fileFormats": [".bib", ".rds", ".csv", ".rmd"],
+    "folders": ["__Направлено на публикацию", "_Принятые к печати", "Archived", "computational_macroeconomics", "Reviews", "SberbankRealEstate", "topResearchers"],
+    "folder": ["computational_macroeconomics"]
+  },
+  "paths": {
+    "home": ["/home/rstudio/Documents/Library/wos"],
+    "papers": ["/home/rstudio/Documents/Papers"],
+    "new_pdf": ["/home/rstudio/Documents/Library/wos/new"],
+    "pdf": ["/home/rstudio/Documents/Library/wos/pdf"],
+    "db": ["/home/rstudio/Documents/Library/wos/db"],
+    "topic_models": ["/home/rstudio/Documents/Library/wos/topic_models"],
+    "researchers": ["/home/rstudio/Documents/Library/wos/db/researchers"],
+    "jscore": ["/home/rstudio/Documents/Library/wos/db/jscore.txt"]
+  },
+  "files": {
+    "bibWoS": ["/home/rstudio/Documents/Library/wos/db/WoS.bib"],
+    "csvWoS": ["/home/rstudio/Documents/Library/wos/db/WoS.csv"],
+    "rdsWoS": ["/home/rstudio/Documents/Library/wos/db/WoS.rds"],
+    "rdsWoS_old": ["/home/rstudio/Documents/Library/wos/db/WoS_backup.rds"],
+    "csvWoS_old": ["/home/rstudio/Documents/Library/wos/db/WoS_backup.csv"],
+    "xlsxSelectedJournals": ["/home/rstudio/Documents/Library/wos/db/SelectedJournals.xlsx"],
+    "pdf_first_page": ["img/pdf_first_page.png"]
+  },
+  "journals": ["All", "The Review of Financial Studies", "The Journal of Finance", "Journal of Empirical Finance", "Journal of Banking and Finance", "Journal of Econometrics", "Economic Modelling", "Economics Letters", "Finance Research Letters", "International Review of Economics and Finance", "Journal of Corporate Finance", "Journal of Economic Dynamics and Control", "Journal of Financial and Quantitative Analysis", "Journal of Financial Economics", "Journal of International Economics", "Journal of International Financial Markets, Institutions and Money", "Journal of International Money and Finance", "Pacific-Basin Finance Journal", "Quantitative Finance", "Review of Financial Economics", "The Quarterly Journal of Economics", "World Development", "European Economic Review", "Journal of Development Economics", "The Quarterly Review of Economics and Finance", "Foundations and Trends in Finance", "International Business Review", "Journal of Financial Stability", "Journal of World Business", "Research in International Business and Finance", "Journal of Financial Intermediation", "Journal of Risk and Uncertainty", "Annals of Finance", "Borsa Istanbul Review", "Emerging Markets Review", "Finance and Stochastics", "Financial Management", "Financial Review", "International Review of Finance", "International Review of Financial Analysis", "Journal of Behavioral Finance", "Journal of Financial Econometrics", "Journal of Financial Markets", "Journal of Financial Services Research", "Journal of Futures Markets", "Journal of International Management", "Journal of Money, Credit and Banking", "Journal of Multinational Financial Management", "Journal of Risk and Insurance", "Real Estate Economics", "Review of Development Finance", "Review of Finance", "The European Journal of Finance", "Venture Capital", "Journal of Corporate Real Estate", "Quantitative Marketing and Economics", "Review of Derivatives Research", "The Journal of Real Estate Finance and Economics", "Emerging Markets Finance and Trade", "Global Finance Journal"],
+  "publishers": ["All", "Oxford University Press", "Wiley-Blackwell", "Elsevier", "Cambridge University Press", "Taylor & Francis", "Now Publishers", "Springer Nature", "Borsa Istanbul Anonim Sirketi", "Africagrowth Institute", "Emerald"],
+  "year": {
+    "min": [1987],
+    "max": [2018]
+  },
+  "jscore": {
+    "min": [0.52],
+    "max": [10.67]
+  },
+  "ascore": {
+    "min": [1],
+    "max": [3]
+  },
+  "nrecords": {
+    "min": [1],
+    "max": [5]
+  }
+}
