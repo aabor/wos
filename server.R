@@ -420,6 +420,24 @@ shinyServer(function(input,output,clientData, session){
               ),
               selection = 'single')
   })
+  # summary table for records to export
+  output$tableBibsExportSummary = DT::renderDataTable({
+    datatable(rv$WoSExportDT %>%   
+                select(journal, jacro, jscore, ascore) %>% 
+                group_by(journal, jacro, jscore) %>% 
+                summarise(nrecords=n(),
+                          mnascore=mean(ascore)) %>% 
+                select(journal, jacro, nrecords, jscore, mnascore) %>% 
+                arrange(desc(nrecords))
+                  , rownames = F, 
+              colnames = c("Journal", "Jacro", "Nrd", "Jsc", "MnAsc"),
+              escape = F,
+              options = list(
+                lengthMenu = list(c(3, 5, 15), c('3', '5', "15")),
+                pageLength = 5
+              ),
+              selection = 'single')
+  })
   #table with top researchers from Clarivate Analytics database
   output$tableResearchers = DT::renderDataTable({
     datatable(rv$ResearchersDT[, top_researchers_dt_col_names], rownames = F,
