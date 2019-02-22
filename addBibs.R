@@ -237,7 +237,7 @@ compute_research_papers_statistics<-function(dfWoS, log_con=NULL, progress=NULL)
   dfWoSaug<-augment_wos_dataframe(dfWoS)
   'computing whole library statistics...\r\n' %>% 
     give_echo(log_con, T, progress)
-  start_year<-year(Sys.Date())-2
+  start_year<-year(Sys.Date())-3
   df_whole_library_stat <- articlesDescriptives(dfWoSaug, start_year)
   df_whole_library_stat <- left_join(df_whole_library_stat, 
                                      libraryDescriptivesJournals(dfWoSaug, start_year), 
