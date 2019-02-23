@@ -1,0 +1,1 @@
+@article{akins_li_ng_rusticus_2016, title={Bank Competition and Financial Stability: Evidence from the Financial Crisis}, volume={51}, DOI={10.1017/S0022109016000090}, number={1}, journal={Journal of Financial and Quantitative Analysis}, publisher={Cambridge University Press}, author={Akins, Brian and Li, Lynn and Ng, Jeffrey and Rusticus, Tjomme O.}, year={2016}, pages={1–28}}
