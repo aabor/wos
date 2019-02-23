@@ -9,7 +9,7 @@
 #' @export
 #'
 #' @examples
-#' createResearcherDF() %>% head
+#' auths<-createResearcherDF() 
 createResearcherDF <- function(progress=NULL) {
   old_path <- getwd()
   setwd(g$paths$researchers)
@@ -18,14 +18,17 @@ createResearcherDF <- function(progress=NULL) {
   not_letters <- "[^[[:alnum:]][[:space:]]-]"
   df <- map(years, function(year) {
     tryCatch({
+      rm()
+      gc()
       print(year)
+      #year<-2018
       rx<-"^\\./" %c% year
       f <- files[which(str_detect(files, pattern = rx))]
       book <- loadWorkbook(f)
       sh <- readWorksheet(book, sheet = 1)
       sh<-sh[,1:4]
       names(sh) <- c('fm_name', 'l_name', 'category', 'affiliation')
-      sh <- allVariablesToCharacters(sh)
+      sh <- allVariablesToCharacters(sh) %>% as_tibble()
       economic_authors<-sh %>% subset(str_detect(category, "(?:Economics|Business|Social)")) %>% 
         mutate(fm_name = str_replace_all(fm_name, pattern = not_letters, ''),
                l_name = str_replace_all(l_name, pattern = '[[:blank:]]', ''),
@@ -53,14 +56,13 @@ createResearcherDF <- function(progress=NULL) {
   if (!is.null(progress)) {
     updateProgress(progress, detail = msg)
   }
-  
   setwd(old_path)
   df
 }
 #' Create cite scores data frame
 #'
 #' CiteScore metrics downloaded from Scopus for recent years
-#' https://journalmetrics.scopus.com/
+#' https://www.scopus.com/sources
   
 #'
 #' @param xlsxSelectedJournals string path to Excel book with manually selected journals
@@ -76,7 +78,7 @@ createResearcherDF <- function(progress=NULL) {
 #' @examples
 #' progress<-NULL
 #' log_con<-NULL
-#' createCiteScoreDF(g$files$xlsxSelectedJournals,g$paths$jscore_path) %>% head
+#' sc<-createCiteScoreDF(g$files$xlsxSelectedJournals,g$paths$jscore_path) %>% head
 createCiteScoreDF <- function(xlsxSelectedJournals, jscore_path, log_con=NULL, progress=NULL) {
   myjournals <- dfFromExcel(g$files$xlsxSelectedJournals, 'selected_journals')
   files<-dir(g$paths$jscore, pattern = "\\.txt$", full.names = T, recursive = F)
@@ -118,12 +120,12 @@ createCiteScoreDF <- function(xlsxSelectedJournals, jscore_path, log_con=NULL, p
     reduce(bind_rows)
   'cite score statistics loaded...\r\n' %>% 
     give_echo(log_con, T, progress)
-  
+
   dfMyJournalsFull<-left_join(myjournals, AllCiteScores, by = 'title') %>% 
     mutate(title=mydbtitle) %>% 
     select(-mydbtitle) %>% 
-    mutate(year=ifelse(is.na(year), col_metrics[1], year))
-  dfMyJournalsFull %>% head
+    mutate(year=ifelse(is.na(year), col_metrics[1], year)) %>% 
+    as_tibble()
   dfCiteScores<-dfMyJournalsFull %>% 
     select(title, year, citescore, publisher3, publisher, url_tocken) %>% 
     spread(year, citescore, fill=0.0)
@@ -134,7 +136,8 @@ createCiteScoreDF <- function(xlsxSelectedJournals, jscore_path, log_con=NULL, p
     select(title, !!arrange_quo) %>% 
     mutate(quartile=!!arrange_quo) %>% 
     select(-!!arrange_quo) %>% 
-    mutate(quartile=str_replace(quartile, "Quartile ", "Q"))
+    mutate(quartile=str_replace(quartile, "Quartile ", "Q")) %>% 
+    as_tibble()
   
   dfTop10<-dfMyJournalsFull %>% 
     select(title, year, top10) %>% 
@@ -144,9 +147,7 @@ createCiteScoreDF <- function(xlsxSelectedJournals, jscore_path, log_con=NULL, p
     select(-!!arrange_quo)
   df<-reduce(list(dfCiteScores, dfQuartiles, dfTop10), left_join, by="title") %>% 
     mutate(jscore=!!arrange_quo) %>% 
-    rowwise() %>% 
-    mutate(jacro=getAcro(title)) %>% 
-    allVariablesToCharacters() %>% 
+    mutate(jacro=pmap_chr(list(title), getAcro)) %>% 
     select(title, jacro, jscore, publisher3, publisher, quartile, top10, !!arrange_quo:!!last_col_quo, url_tocken) %>% 
     mutate(jscore=as.numeric(jscore)) %>% 
     arrange(desc(jscore))
@@ -169,11 +170,9 @@ createCiteScoreDF <- function(xlsxSelectedJournals, jscore_path, log_con=NULL, p
 #' (file<-files[1])
 #' read_cite_score_2017(file)
 read_cite_score_2017<-function(file){
-  df<-read_tsv(file, progress = T, trim_ws = T, col_types = cols()) %>% 
-    select(Title, `2017 CiteScore`, `Social Sciences`) %>% 
-    distinct(Title, .keep_all = T) %>% 
-    filter(!is.na(`Social Sciences`)) %>% 
-    select(-`Social Sciences`)
+  df<-read_tsv(file, progress = T, trim_ws = T, col_types = cols(), skip = 1) %>% 
+    select(Title, `CiteScore`) %>% 
+    distinct(Title, .keep_all = T)
   names(df)<-c("title", "citescore")
   df %<>% 
     mutate(citescore=as.numeric(citescore))

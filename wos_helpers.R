@@ -55,18 +55,16 @@ gsubf <- function(pattern, x, f, ...) {
 #'
 #' @examples
 #' str<-c("Alexander A", "Alex B")
+#' str<-"Ruth V"
 #' (res<-extractFirstLetters(str))
 #' class(res)
 extractFirstLetters<-function(str){
-  ret<-str %>% 
-    map(str_split, " ") %>% 
-    map(unlist) %>% 
-    map(~map_chr(..1,str_sub,1,1))
-  ret[[1]]
-  # str_split(str, " ")[[1]] %>% 
-  #   lapply(str_sub,1,1) %>% 
-  #   collapse(" ") %>% 
-  #   as.character()
+#  print(str)
+  str %>% 
+    str_split(" ") %>% 
+    map(str_sub,1,1) %>% 
+    map(glue_collapse, " ") %>% 
+    unlist
 }
 
 #' Create an acronym
