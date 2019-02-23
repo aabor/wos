@@ -125,15 +125,17 @@ articlesDescriptives <- function(dfWoSaug, start_year = 2012) {
 #' df<-df_whole_library_stat[1,]
 #' df_all<-df_whole_library_stat %>% filter(publisher3=="oup")
 #' df<-df_all[1,]
-#' journal<-df$journal_name
+#' (journal<-df$journal)
+#' journal<-"Journal of Development Economics"
 #' generate_journal_url_tag(journal)
 generate_journal_url_tag <- function(journal) {
-  print(journal)
+  #print(journal)
   url_tag<-journal
   url_path<-""
-  j=wosdoc$libstat$jcitescores %>% 
-    select(title, publisher3, url, url_tocken) %>% 
-    filter(title==journal)
+  j=wosdoc$journals %>% 
+    filter(title==journal | mydbtitle==journal) %>% 
+    select(title, publisher3, url, url_tocken)
+  #print(j)
   if(j$publisher3 == "elr"){
     jtitle<-j$title
     jtitle<-str_replace_all(jtitle, pattern = "[[:punct:]]", replacement = "")

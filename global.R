@@ -26,6 +26,11 @@ rdaWosDoc<-file.path(g$paths$home, "wosdoc.rda")
 load(file=rdaWosDoc, verbose = T)
 names(wosdoc)
 wosdoc$paths$papers<-dir(g$paths$papers)
+wosdoc$journals<-dfFromExcel(g$files$xlsxSelectedJournals, 'selected_journals')
+wosdoc$publishers<-dfFromExcel(g$files$xlsxSelectedJournals, 'publishers')
+wosdoc$journals %<>% 
+  select(-publisher) %>% 
+  left_join(wosdoc$publishers, by="publisher3")
 
 
 wos_dt_col_names<-c("pdf","authors", "jscore", "ascore", "nrecords", "title7", "year", "jacro", "publisher3", "updated")

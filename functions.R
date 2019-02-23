@@ -81,7 +81,7 @@ dfFromExcel <- function(xlsxBookFileName, xlsxSheetName, progress=NULL) {
     updateProgress(progress, detail = msg)
   }
   print(paste('Data frame loaded from sheet', xlsxSheetName, 'in', xlsxBookFileName))
-  df
+  df %>% as_tibble()
 }
 #' Save library with backed up file
 #'

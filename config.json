@@ -26,14 +26,14 @@
     "pdf_first_page": ["img/pdf_first_page.png"]
   },
   "journals": ["All", "Journal of Banking and Finance", "Finance Research Letters", "The Review of Financial Studies", "International Review of Economics and Finance", "Journal of Economic Dynamics and Control", "Research in International Business and Finance", "Economic Modelling", "Journal of Financial Economics", "Economics Letters", "Emerging Markets Review", "Journal of Financial Intermediation", "Journal of International Financial Markets, Institutions and Money", "Pacific-Basin Finance Journal", "European Economic Review", "Journal of International Economics", "Journal of World Business", "Journal of Corporate Finance", "The Journal of Finance", "The Quarterly Journal of Economics", "Journal of Development Economics", "Journal of Financial Markets", "Journal of International Money and Finance", "World Development", "Journal of Empirical Finance", "Journal of Financial Stability", "International Business Review", "Journal of Econometrics", "Annals of Finance", "Borsa Istanbul Review", "Finance and Stochastics", "Financial Management", "Financial Review", "International Review of Finance", "International Review of Financial Analysis", "Journal of Behavioral Finance", "Journal of Financial and Quantitative Analysis", "Journal of Financial Econometrics", "Journal of Financial Services Research", "Journal of Futures Markets", "Journal of International Management", "Journal of Money, Credit and Banking", "Journal of Multinational Financial Management", "Journal of Risk and Insurance", "Journal of Risk and Uncertainty", "Quantitative Finance", "Real Estate Economics", "Review of Development Finance", "Review of Finance", "Review of Financial Economics", "The European Journal of Finance", "The Quarterly Review of Economics and Finance", "Venture Capital", "Journal of Corporate Real Estate", "Quantitative Marketing and Economics", "Review of Derivatives Research", "The Journal of Real Estate Finance and Economics", "Foundations and Trends in Finance", "Emerging Markets Finance and Trade", "Global Finance Journal"],
-  "publishers": ["All", "Elsevier", "Oxford University Press", "Wiley-Blackwell", "Springer Nature", "Borsa Istanbul Anonim Sirketi", "Taylor & Francis", "Cambridge University Press", "Africagrowth Institute", "Emerald", "Now Publishers"],
+  "publishers": ["All", null],
   "year": {
     "min": [1987],
     "max": [2019]
   },
   "jscore": {
-    "min": [0.52],
-    "max": [10.67]
+    "min": ["Inf"],
+    "max": ["-Inf"]
   },
   "ascore": {
     "min": [1],

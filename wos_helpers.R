@@ -38,7 +38,7 @@ add_tags_color<-function(tagged_string){
 #'
 #' @examples
 #' text<-c("aLexander", "konstantin")
-#' gsubf(START %R% "al", text, toupper)
+#' gsubf("^al", text, toupper)
 gsubf <- function(pattern, x, f, ...) {
   m <- gregexpr(pattern, x)
   regmatches(x, m) <- lapply(regmatches(x, m), f, ...)

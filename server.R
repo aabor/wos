@@ -6,7 +6,7 @@ rv <- reactiveValues(WoSExportDT = dfWoSExport,
                      JournalsDT=wosdoc$libstat$jcitescores,
                      WholeLibraryStatDT=wosdoc$libstat$general,
                      DetailedLibraryStatDT=wosdoc$libstat$detailed,
-                     PublisherStatDT=wosdoc$libstat$publishers,
+                     PublisherStatDT=wosdoc$publishers,
                      keywordsmodifiedScores=wosdoc$keywords$modifiedScores,
                      keywordsmodifiedScoresByYear=wosdoc$keywords$modifiedScoresByYear,
                      keywordsfrequenciesByYear=wosdoc$keywords$frequenciesByYear,
@@ -422,7 +422,9 @@ shinyServer(function(input,output,clientData, session){
   })
   # summary table for records to export
   output$tableBibsExportSummary = DT::renderDataTable({
+    #dfWoSExport
     datatable(rv$WoSExportDT %>%   
+                mutate(journal=pmap_chr(list(journal), generate_journal_url_tag)) %>% 
                 select(journal, jacro, jscore, ascore) %>% 
                 group_by(journal, jacro, jscore) %>% 
                 summarise(nrecords=n(),

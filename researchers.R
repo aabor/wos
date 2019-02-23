@@ -80,7 +80,7 @@ createResearcherDF <- function(progress=NULL) {
 #' log_con<-NULL
 #' sc<-createCiteScoreDF(g$files$xlsxSelectedJournals,g$paths$jscore_path) %>% head
 createCiteScoreDF <- function(xlsxSelectedJournals, jscore_path, log_con=NULL, progress=NULL) {
-  myjournals <- dfFromExcel(g$files$xlsxSelectedJournals, 'selected_journals')
+  myjournals<-wosdoc$journals
   files<-dir(g$paths$jscore, pattern = "\\.txt$", full.names = T, recursive = F)
   if(length(files)==0)return(NULL)
   files<-sort(files, decreasing = T)
@@ -151,12 +151,13 @@ createCiteScoreDF <- function(xlsxSelectedJournals, jscore_path, log_con=NULL, p
     select(title, jacro, jscore, publisher3, publisher, quartile, top10, !!arrange_quo:!!last_col_quo, url_tocken) %>% 
     mutate(jscore=as.numeric(jscore)) %>% 
     arrange(desc(jscore))
-  #load publishers from Excel book
-  wosdoc$libstat$publishers<<-dfFromExcel(g$files$xlsxSelectedJournals, 'publishers')
   df %>% 
-    left_join(wosdoc$libstat$publishers %>% select(-publisher), by="publisher3")->df
+    left_join(wosdoc$publishers %>% select(-publisher), by="publisher3")->df
   'cite score database created...' %>% 
     give_echo(log_con, T, progress)
+  df %<>%  
+    mutate(title=pmap_chr(list(title), generate_journal_url_tag))
+
   df
 }
 #' Load cite score statistics in format of 2017 year
