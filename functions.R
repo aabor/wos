@@ -1,30 +1,3 @@
-#' Create Bibliography data frame
-#'
-#' Create Bibliography data frame to show in the main panel window must contain
-#' abbreviated journal names, dates in appropriate format, shorted titles and
-#' author names
-#' @param df data.frame
-#'
-#' @return data.frame
-#' @export
-#'
-#' @examples
-#' df<-dfWoS
-#' res<-getWoSDT(df)
-#' res$jacro %>% unique()
-getWoSDT <- function(df) {
-  
-  df %>%
-    mutate(title7 = paste(str_sub(title, 1, 35), "...", sep = ''),
-           authors = str_replace_all(author, " and ", "; ")) %>%
-    mutate(
-      authors = paste(str_sub(authors, 1, 12), "...", sep = ''),
-      updated = format(updated, "%Y-%m-%d %H:%M:%S", tz = g$tz)
-    ) %>%
-    mutate(pdf = ifelse(is.na(file), NA, '<img src="pdf.ico" height="25"></img>')) %>%
-    #    dplyr::select(pdf, authors, jscore, ascore, nrecords, title7, year, journal, publisher3, updated) %>%
-    arrange(desc(updated), desc(pdf), desc(ascore), desc(year))
-}
 #' Write data.frame to Excel
 #'
 #' @param xlsxBookFileName string path to Excel book

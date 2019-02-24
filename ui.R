@@ -1,4 +1,3 @@
-source("user_interface.R")
 dbHeader <- dashboardHeader(titleWidth = 140)
 dbHeader$children[[2]]$children<-shiny::span(shiny::tagList(shiny::tags$img(src='wos-logo.png',
                                                        height='45',

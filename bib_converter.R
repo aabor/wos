@@ -66,7 +66,7 @@ createBibKeys <- function(dfNewBib,  log_con=NULL, progress=NULL) {
     give_echo(log_con, T, progress)
   df_left<-dfNewBib %>% 
     select(-jacro, -jscore, -publisher3, -publisher)
-  df_right<-wosdoc$libstat$jcitescores %>% 
+  df_right<-d$libstat$jcitescores %>% 
     mutate(journal=title) %>% 
     select(journal, jacro, jscore, publisher3, publisher)
   

@@ -132,7 +132,7 @@ generate_journal_url_tag <- function(journal) {
   #print(journal)
   url_tag<-journal
   url_path<-""
-  j=wosdoc$journals %>% 
+  j=d$journals %>% 
     filter(title==journal | mydbtitle==journal) %>% 
     select(title, publisher3, url, url_tocken)
   #print(j)

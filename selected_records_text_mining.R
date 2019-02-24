@@ -37,46 +37,52 @@ get_terms<-function(dfWoSExport){
 #' @examples
 #' progress<-NULL
 #' pdf_file<-"~/wos_data/pdf/wlyAdamNA549.pdf"
+#' suggested_terms<-get_terms(dfWoSExport)
 #' get_text_chunks_from_selected_records(dfWoSExport, suggested_terms)
 get_text_chunks_from_selected_records<-function(dfWoSExport, suggested_terms, progress=NULL){
   suggested_terms_vector<-words(suggested_terms)
   df<-dfWoSExport %>% 
-    mutate(pdf_file=file.path(g$paths$pdf, basename(.$file))) %>% 
-    subset(file.exists(pdf_file))
-  if(nrow(df)==0)print("Warning no .pdfs for selected bibliography records, imposible to get text chunks")
-  df %>% 
+    mutate(pdf_file=file.path(g$paths$pdf, basename(file))) %>% 
     subset(!is.na(file)) %>% 
-    rowwise() %>% 
-    do({
-      pdf_file<-file.path(g$paths$pdf, basename(.$file))
-      paste("searching terms in full text", basename(.$file), "\r\n") %>% 
+    subset(file.exists(pdf_file)) %>% 
+    select(key, file, author, title, keywords)
+  if(nrow(df)==0)print("Warning no .pdfs for selected bibliography records, imposible to get text chunks")
+  ret<-df %>%
+    mutate(data=pmap(list(key, file, author, title, keywords), function(key, file, author, title, keywords){
+      pdf_file<-file.path(g$paths$pdf, basename(file))
+      "searching terms in full text: " %c% basename(file) %c% "\r\n"%>% 
         give_echo(NULL, T, progress)
       text_chunks<-NULL
+      print(pdf_file)
       main_text<-pdf_text(pdf_file)
       pages<-ifelse(length(main_text)>2,
                     main_text[2:(length(main_text)-1)],
                     main_text)
-      pages_short<-cleanText(pages) %>% glue_collapse(sep=" ") %>% as.character() %>% str_split(pattern = " ") %>% unlist
+      pages_short<-cleanText(pages) %>% 
+        glue_collapse(sep=" ") %>% 
+        as.character() %>% 
+        str_split(pattern = " ") %>% 
+        unlist
       pages_short_nopunct<-pages_short %>% 
         str_replace_all(pattern="[[:punct:]]", "")
-      res<-lapply(suggested_terms_vector, function(x){
-        df<-data.frame(detected=str_detect(pages_short_nopunct, pattern=x)) %>% 
-          mutate(wp=1:n()) %>% 
+      get_terms_df<-function(x){
+#        print(x)
+        tibble(term=x,
+               detected=str_detect(pages_short_nopunct, pattern=x)) %>% 
+          rowid_to_column("wp") %>% 
           filter(detected) %>% 
-          select(wp)
-        df
-      })
-      names(res)<-suggested_terms_vector
-      wcounts<-res %>% lapply(nrow) %>% 
-        unlist %>% 
-        as.data.frame %>% 
-        rownames_to_column()
-      names(wcounts)<-c("term", "wcount")
-      terms<-wcounts %>% 
-        arrange(desc(wcount)) %>% 
-        filter(wcount>5) %>% 
-        pull(term)
-      res_short<-terms %>% lapply(function(x)res[[x]]) %>% unlist %>% sort
+          select(term, wp)
+      }
+      #get_terms_df(suggested_terms_vector[1])
+      res<-map_df(suggested_terms_vector, get_terms_df)
+      #print(res)
+      res<-res %>% 
+        group_by(term, wp) %>% 
+        summarise(wcount=n()) %>% 
+        ungroup %>% 
+        top_n(n=5, wcount)
+      res_short<-res %>% 
+        pull(wp)
       worders<-data.frame(position=res_short, distance=c(NA, diff(res_short)))
       chunks<-worders %>% 
         filter(!is.na(distance)) %>% 
@@ -90,27 +96,30 @@ get_text_chunks_from_selected_records<-function(dfWoSExport, suggested_terms, pr
       if(nrow(chunks)>3){
         chunks<-chunks[1:3,]
       }
-      key<-.$key
       text_chunks<-chunks %>% 
-        rowwise() %>% 
-        do({
-          start<-ifelse(.$start>10, .$start-9, .$start)
-          end<-ifelse(.$end<(length(pages_short)-10), .$end+8, .$end)
-          dfRet<-data.frame(key=key, stringsAsFactors = F)
-          dfRet$text<-pages_short[start:end] %>% 
-            glue_collapse(sep=" ") %>% 
-            as.character() %>% 
-            str_replace_all("_", " ")
-          dfRet
-        })
-      reference<-get_rmarkdown_reference(.)
-      ret<-tibble(key=.$key, 
-                 reference=get_rmarkdown_reference(.), 
-                 text_chunks=text_chunks$text %>% 
-                   glue_collapse(sep ="\r\n") %>% as.character()) %>% 
+        mutate(text=pmap(list(start, end), function(start, end){
+          start<-ifelse(start>10, start-9, start)
+          end<-ifelse(end<(length(pages_short)-10), end+8, end)
+          ret<-tibble(k=key, 
+                 text=pages_short[start:end] %>% 
+                   glue_collapse(sep=" ") %>% 
+                   as.character() %>% 
+                   str_replace_all("_", " "))
+          ret
+        })) %>% select(text) %>% 
+        unnest
+      tibble(key=!!key, 
+                 reference=get_rmarkdown_reference(key, author, title, keywords), 
+                 text_chunks=text_chunks %>% 
+                   pull(text) %>% 
+                   glue_collapse(sep ="\r\n") 
+                 %>% as.character()) %>% 
         mutate(reference=highlight_terms(reference, suggested_terms_vector),
           text_chunks=highlight_terms(text_chunks, suggested_terms_vector))
-    })
+    }))
+  ret %>% 
+    select(data) %>% 
+    unnest
 }
 #' Hightligt words in text
 #'

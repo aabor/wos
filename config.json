@@ -1,46 +1,505 @@
 {
-  "tz": ["Europe/Moscow"],
-  "export": {
-    "fileFormat": [".rds"],
-    "fileFormats": [".bib", ".rds", ".csv", ".rmd"],
-    "folders": ["__Направлено на публикацию", "_Принятые к печати", "Archived", "computational_macroeconomics", "Reviews", "SberbankRealEstate", "topResearchers"],
-    "folder": ["computational_macroeconomics"]
+  "tz": "Europe/Moscow",
+  "select": {
+    "fileFormats": [".bib", ".rds", ".csv", ".rmd"]
   },
   "paths": {
-    "home": ["/home/rstudio/Documents/Library/wos"],
-    "papers": ["/home/rstudio/Documents/Papers"],
-    "new_pdf": ["/home/rstudio/Documents/Library/wos/new"],
-    "pdf": ["/home/rstudio/Documents/Library/wos/pdf"],
-    "db": ["/home/rstudio/Documents/Library/wos/db"],
-    "topic_models": ["/home/rstudio/Documents/Library/wos/topic_models"],
-    "researchers": ["/home/rstudio/Documents/Library/wos/db/researchers"],
-    "jscore": ["/home/rstudio/Documents/Library/wos/db/jscore.txt"]
+    "home": "/home/rstudio/Documents/Library/wos",
+    "papers": "/home/rstudio/Documents/Papers",
+    "new_pdf": "/home/rstudio/Documents/Library/wos/new",
+    "pdf": "/home/rstudio/Documents/Library/wos/pdf",
+    "db": "/home/rstudio/Documents/Library/wos/db",
+    "topic_models": "/home/rstudio/Documents/Library/wos/topic_models",
+    "researchers": "/home/rstudio/Documents/Library/wos/db/researchers",
+    "jscore": "/home/rstudio/Documents/Library/wos/db/jscore.txt"
   },
   "files": {
-    "bibWoS": ["/home/rstudio/Documents/Library/wos/db/WoS.bib"],
-    "csvWoS": ["/home/rstudio/Documents/Library/wos/db/WoS.csv"],
-    "rdsWoS": ["/home/rstudio/Documents/Library/wos/db/WoS.rds"],
-    "rdsWoS_old": ["/home/rstudio/Documents/Library/wos/db/WoS_backup.rds"],
-    "csvWoS_old": ["/home/rstudio/Documents/Library/wos/db/WoS_backup.csv"],
-    "xlsxSelectedJournals": ["/home/rstudio/Documents/Library/wos/db/SelectedJournals.xlsx"],
-    "pdf_first_page": ["img/pdf_first_page.png"]
+    "bibWoS": "/home/rstudio/Documents/Library/wos/db/WoS.bib",
+    "csvWoS": "/home/rstudio/Documents/Library/wos/db/WoS.csv",
+    "rdsWoS": "/home/rstudio/Documents/Library/wos/db/WoS.rds",
+    "rdsWoS_old": "/home/rstudio/Documents/Library/wos/db/WoS_backup.rds",
+    "csvWoS_old": "/home/rstudio/Documents/Library/wos/db/WoS_backup.csv",
+    "pdf_first_page": "img/pdf_first_page.png",
+    "rdsbib":"bibliography.rds"
   },
-  "journals": ["All", "Journal of Banking and Finance", "Finance Research Letters", "The Review of Financial Studies", "International Review of Economics and Finance", "Journal of Economic Dynamics and Control", "Research in International Business and Finance", "Economic Modelling", "Journal of Financial Economics", "Economics Letters", "Emerging Markets Review", "Journal of Financial Intermediation", "Journal of International Financial Markets, Institutions and Money", "Pacific-Basin Finance Journal", "European Economic Review", "Journal of International Economics", "Journal of World Business", "Journal of Corporate Finance", "The Journal of Finance", "The Quarterly Journal of Economics", "Journal of Development Economics", "Journal of Financial Markets", "Journal of International Money and Finance", "World Development", "Journal of Empirical Finance", "Journal of Financial Stability", "International Business Review", "Journal of Econometrics", "Annals of Finance", "Borsa Istanbul Review", "Finance and Stochastics", "Financial Management", "Financial Review", "International Review of Finance", "International Review of Financial Analysis", "Journal of Behavioral Finance", "Journal of Financial and Quantitative Analysis", "Journal of Financial Econometrics", "Journal of Financial Services Research", "Journal of Futures Markets", "Journal of International Management", "Journal of Money, Credit and Banking", "Journal of Multinational Financial Management", "Journal of Risk and Insurance", "Journal of Risk and Uncertainty", "Quantitative Finance", "Real Estate Economics", "Review of Development Finance", "Review of Finance", "Review of Financial Economics", "The European Journal of Finance", "The Quarterly Review of Economics and Finance", "Venture Capital", "Journal of Corporate Real Estate", "Quantitative Marketing and Economics", "Review of Derivatives Research", "The Journal of Real Estate Finance and Economics", "Foundations and Trends in Finance", "Emerging Markets Finance and Trade", "Global Finance Journal"],
-  "publishers": ["All", null],
   "year": {
-    "min": [1987],
-    "max": [2019]
+    "min": 1987,
+    "max": 2019
   },
   "jscore": {
-    "min": ["Inf"],
-    "max": ["-Inf"]
+    "min": "Inf",
+    "max": "-Inf"
   },
   "ascore": {
-    "min": [1],
-    "max": [3]
+    "min": 1,
+    "max": 3
   },
   "nrecords": {
-    "min": [1],
-    "max": [5]
+    "min": 1,
+    "max": 5
+  },
+  "specs": {
+    "publishers": [
+      {
+        "publisher3": "ares",
+        "publisher": "American Real Estate Society",
+        "url": "http://pages.jh.edu/jrer/papers/content/New_Current/default.htm"
+      },
+      {
+        "publisher3": "cup",
+        "publisher": "Cambridge University Press",
+        "url": "https://www.cambridge.org/core/journals"
+      },
+      {
+        "publisher3": "elr",
+        "publisher": "Elsevier",
+        "url": "https://www.sciencedirect.com/journal"
+      },
+      {
+        "publisher3": "emd",
+        "publisher": "Emerald",
+        "url": "https://www.emeraldinsight.com/journal"
+      },
+      {
+        "publisher3": "now",
+        "publisher": "Now Publishers",
+        "url": "https://www.nowpublishers.com/FIN"
+      },
+      {
+        "publisher3": "oup",
+        "publisher": "Oxford University Press",
+        "url": "https://academic.oup.com"
+      },
+      {
+        "publisher3": "snr",
+        "publisher": "Springer Nature",
+        "url": "https://link.springer.com/journal/volumesAndIssues"
+      },
+      {
+        "publisher3": "tyr",
+        "publisher": "Taylor & Francis",
+        "url": "https://www.tandfonline.com/loi"
+      },
+      {
+        "publisher3": "wly",
+        "publisher": "Wiley-Blackwell",
+        "url": "https://onlinelibrary.wiley.com/loi"
+      },
+      {
+        "publisher3": "aea",
+        "publisher": "American Economic Association",
+        "url": "https://www.aeaweb.org/journals"
+      }
+    ],
+    "journals": [
+      {
+        "mydbtitle": "Journal of Real Estate Research",
+        "title": "Journal of Real Estate Research",
+        "publisher3": "ares",
+        "url_tocken": "8965803"
+      },
+      {
+        "mydbtitle": "Journal of Financial and Quantitative Analysis",
+        "title": "Journal of Financial and Quantitative Analysis",
+        "publisher3": "cup",
+        "url_tocken": "221090"
+      },
+      {
+        "mydbtitle": "Borsa Istanbul Review",
+        "title": "Borsa Istanbul Review",
+        "publisher3": "elr",
+        "url_tocken": "22148450"
+      },
+      {
+        "mydbtitle": "Economic Modelling",
+        "title": "Economic Modelling",
+        "publisher3": "elr",
+        "url_tocken": "02649993"
+      },
+      {
+        "mydbtitle": "Economics Letters",
+        "title": "Economics Letters",
+        "publisher3": "elr",
+        "url_tocken": "1651765"
+      },
+      {
+        "mydbtitle": "Emerging Markets Review",
+        "title": "Emerging Markets Review",
+        "publisher3": "elr",
+        "url_tocken": "15660141"
+      },
+      {
+        "mydbtitle": "European Economic Review",
+        "title": "European Economic Review",
+        "publisher3": "elr",
+        "url_tocken": "142921"
+      },
+      {
+        "mydbtitle": "Finance Research Letters",
+        "title": "Finance Research Letters",
+        "publisher3": "elr",
+        "url_tocken": "15446123"
+      },
+      {
+        "mydbtitle": "Global Finance Journal",
+        "title": "Global Finance Journal",
+        "publisher3": "elr",
+        "url_tocken": "10440283"
+      },
+      {
+        "mydbtitle": "International Business Review",
+        "title": "International Business Review",
+        "publisher3": "elr",
+        "url_tocken": "09695931"
+      },
+      {
+        "mydbtitle": "International Review of Economics and Finance",
+        "title": "International Review of Economics and Finance",
+        "publisher3": "elr",
+        "url_tocken": "10590560"
+      },
+      {
+        "mydbtitle": "International Review of Financial Analysis",
+        "title": "International Review of Financial Analysis",
+        "publisher3": "elr",
+        "url_tocken": "10575219"
+      },
+      {
+        "mydbtitle": "Journal of Banking and Finance",
+        "title": "Journal of Banking and Finance",
+        "publisher3": "elr",
+        "url_tocken": "3784266"
+      },
+      {
+        "mydbtitle": "Journal of Corporate Finance",
+        "title": "Journal of Corporate Finance",
+        "publisher3": "elr",
+        "url_tocken": "9291199"
+      },
+      {
+        "mydbtitle": "Journal of Development Economics",
+        "title": "Journal of Development of Economics",
+        "publisher3": "elr",
+        "url_tocken": "03043878"
+      },
+      {
+        "mydbtitle": "Journal of Econometrics",
+        "title": "Journal of Econometrics",
+        "publisher3": "elr",
+        "url_tocken": "03044076"
+      },
+      {
+        "mydbtitle": "Journal of Economic Dynamics and Control",
+        "title": "Journal of Economic Dynamics and Control",
+        "publisher3": "elr",
+        "url_tocken": "01651889"
+      },
+      {
+        "mydbtitle": "Journal of Empirical Finance",
+        "title": "Journal of Empirical Finance",
+        "publisher3": "elr",
+        "url_tocken": "9275398"
+      },
+      {
+        "mydbtitle": "Journal of Financial Economics",
+        "title": "Journal of Financial Economics",
+        "publisher3": "elr",
+        "url_tocken": "0304405X"
+      },
+      {
+        "mydbtitle": "Journal of Financial Intermediation",
+        "title": "Journal of Financial Intermediation",
+        "publisher3": "elr",
+        "url_tocken": "10429573"
+      },
+      {
+        "mydbtitle": "Journal of Financial Markets",
+        "title": "Journal of Financial Markets",
+        "publisher3": "elr",
+        "url_tocken": "13864181"
+      },
+      {
+        "mydbtitle": "Journal of Financial Stability",
+        "title": "Journal of Financial Stability",
+        "publisher3": "elr",
+        "url_tocken": "15723089"
+      },
+      {
+        "mydbtitle": "Journal of International Economics",
+        "title": "Journal of International Economics",
+        "publisher3": "elr",
+        "url_tocken": "00221996"
+      },
+      {
+        "mydbtitle": "Journal of International Financial Markets, Institutions and Money",
+        "title": "Journal of International Financial Markets, Institutions and Money",
+        "publisher3": "elr",
+        "url_tocken": "10424431"
+      },
+      {
+        "mydbtitle": "Journal of International Management",
+        "title": "Journal of International Management",
+        "publisher3": "elr",
+        "url_tocken": "10754253"
+      },
+      {
+        "mydbtitle": "Journal of International Money and Finance",
+        "title": "Journal of International Money and Finance",
+        "publisher3": "elr",
+        "url_tocken": "2615606"
+      },
+      {
+        "mydbtitle": "Journal of Multinational Financial Management",
+        "title": "Journal of Multinational Financial Management",
+        "publisher3": "elr",
+        "url_tocken": "1042444X"
+      },
+      {
+        "mydbtitle": "Journal of World Business",
+        "title": "Journal of World Business",
+        "publisher3": "elr",
+        "url_tocken": "10909516"
+      },
+      {
+        "mydbtitle": "Pacific-Basin Finance Journal",
+        "title": "Pacific Basin Finance Journal",
+        "publisher3": "elr",
+        "url_tocken": "0927538X"
+      },
+      {
+        "mydbtitle": "The Quarterly Review of Economics and Finance",
+        "title": "Quarterly Review of Economics and Finance",
+        "publisher3": "elr",
+        "url_tocken": "10629769"
+      },
+      {
+        "mydbtitle": "Research in International Business and Finance",
+        "title": "Research in International Business and Finance",
+        "publisher3": "elr",
+        "url_tocken": "2755319"
+      },
+      {
+        "mydbtitle": "Review of Development Finance",
+        "title": "Review of Development Finance",
+        "publisher3": "elr",
+        "url_tocken": "18799337"
+      },
+      {
+        "mydbtitle": "Review of Financial Economics",
+        "title": "Review of Financial Economics",
+        "publisher3": "elr",
+        "url_tocken": "10583300"
+      },
+      {
+        "mydbtitle": "World Development",
+        "title": "World Development",
+        "publisher3": "elr",
+        "url_tocken": "0305750X"
+      },
+      {
+        "mydbtitle": "Journal of Corporate Real Estate",
+        "title": "Journal of Corporate Real Estate",
+        "publisher3": "emd",
+        "url_tocken": "jcre"
+      },
+      {
+        "mydbtitle": "Foundations and Trends in Finance",
+        "title": "Foundations and Trends in Finance",
+        "publisher3": "now",
+        "url_tocken": "15672395"
+      },
+      {
+        "mydbtitle": "Journal of Financial Econometrics",
+        "title": "Journal of Financial Econometrics",
+        "publisher3": "oup",
+        "url_tocken": "jfec"
+      },
+      {
+        "mydbtitle": "The Quarterly Journal of Economics",
+        "title": "Quarterly Journal of Economics",
+        "publisher3": "oup",
+        "url_tocken": "qje"
+      },
+      {
+        "mydbtitle": "Review of Finance",
+        "title": "Review of Finance",
+        "publisher3": "oup",
+        "url_tocken": "rof"
+      },
+      {
+        "mydbtitle": "The Review of Financial Studies",
+        "title": "Review of Financial Studies",
+        "publisher3": "oup",
+        "url_tocken": "rfs"
+      },
+      {
+        "mydbtitle": "Annals of Finance",
+        "title": "Annals of Finance",
+        "publisher3": "snr",
+        "url_tocken": "10436"
+      },
+      {
+        "mydbtitle": "Finance and Stochastics",
+        "title": "Finance and Stochastics",
+        "publisher3": "snr",
+        "url_tocken": "780"
+      },
+      {
+        "mydbtitle": "Journal of Financial Services Research",
+        "title": "Journal of Financial Services Research",
+        "publisher3": "snr",
+        "url_tocken": "10693"
+      },
+      {
+        "mydbtitle": "The Journal of Real Estate Finance and Economics",
+        "title": "Journal of Real Estate Finance and Economics",
+        "publisher3": "snr",
+        "url_tocken": "11146"
+      },
+      {
+        "mydbtitle": "Journal of Risk and Uncertainty",
+        "title": "Journal of Risk and Uncertainty",
+        "publisher3": "snr",
+        "url_tocken": "11166"
+      },
+      {
+        "mydbtitle": "Quantitative Marketing and Economics",
+        "title": "Quantitative Marketing and Economics",
+        "publisher3": "snr",
+        "url_tocken": "11129"
+      },
+      {
+        "mydbtitle": "Review of Derivatives Research",
+        "title": "Review of Derivatives Research",
+        "publisher3": "snr",
+        "url_tocken": "11147"
+      },
+      {
+        "mydbtitle": "Annals of Data Science",
+        "title": "Annals of Data Science",
+        "publisher3": "snr",
+        "url_tocken": "40745"
+      },
+      {
+        "mydbtitle": "Emerging Markets Finance and Trade",
+        "title": "Emerging Markets Finance and Trade",
+        "publisher3": "tyr",
+        "url_tocken": "mree"
+      },
+      {
+        "mydbtitle": "The European Journal of Finance",
+        "title": "European Journal of Finance",
+        "publisher3": "tyr",
+        "url_tocken": "rejf"
+      },
+      {
+        "mydbtitle": "Journal of Behavioral Finance",
+        "title": "Journal of Behavioral Finance",
+        "publisher3": "tyr",
+        "url_tocken": "hbhf"
+      },
+      {
+        "mydbtitle": "Quantitative Finance",
+        "title": "Quantitative Finance",
+        "publisher3": "tyr",
+        "url_tocken": "rquf"
+      },
+      {
+        "mydbtitle": "Venture Capital",
+        "title": "Venture Capital",
+        "publisher3": "tyr",
+        "url_tocken": "tvec"
+      },
+      {
+        "mydbtitle": "Financial Management",
+        "title": "Financial Management",
+        "publisher3": "wly",
+        "url_tocken": "1755053X"
+      },
+      {
+        "mydbtitle": "Financial Review",
+        "title": "Financial Review",
+        "publisher3": "wly",
+        "url_tocken": "15406288"
+      },
+      {
+        "mydbtitle": "International Review of Finance",
+        "title": "International Review of Finance",
+        "publisher3": "wly",
+        "url_tocken": "14682443"
+      },
+      {
+        "mydbtitle": "The Journal of Finance",
+        "title": "Journal of Finance",
+        "publisher3": "wly",
+        "url_tocken": "15406261"
+      },
+      {
+        "mydbtitle": "Journal of Futures Markets",
+        "title": "Journal of Futures Markets",
+        "publisher3": "wly",
+        "url_tocken": "10969934"
+      },
+      {
+        "mydbtitle": "Journal of Money, Credit and Banking",
+        "title": "Journal of Money, Credit and Banking",
+        "publisher3": "wly",
+        "url_tocken": "15384616"
+      },
+      {
+        "mydbtitle": "Journal of Risk and Insurance",
+        "title": "Journal of Risk and Insurance",
+        "publisher3": "wly",
+        "url_tocken": "15396975"
+      },
+      {
+        "mydbtitle": "Real Estate Economics",
+        "title": "Real Estate Economics",
+        "publisher3": "wly",
+        "url_tocken": "15406229"
+      },
+      {
+        "mydbtitle": "Econometrica",
+        "title": "Econometrica",
+        "publisher3": "wly",
+        "url_tocken": "14680262"
+      },
+      {
+        "mydbtitle": "Journal of Applied Econometrics",
+        "title": "Journal of Applied Econometrics",
+        "publisher3": "wly",
+        "url_tocken": "10991255"
+      },
+      {
+        "mydbtitle": "Journal of Common Market Studies",
+        "title": "Journal of Common Market Studies",
+        "publisher3": "wly",
+        "url_tocken": "14685965"
+      },
+      {
+        "mydbtitle": "Journal of Economic Surveys",
+        "title": "Journal of Economic Surveys",
+        "publisher3": "wly",
+        "url_tocken": "14676419"
+      },
+      {
+        "mydbtitle": "Journal of Economic Perspectives",
+        "title": "Journal of Economic Perspectives",
+        "publisher3": "aea",
+        "url_tocken": "jep"
+      },
+      {
+        "mydbtitle": "American Economic Journal: Applied Economics",
+        "title": "American Economic Journal: Applied Economics",
+        "publisher3": "aea",
+        "url_tocken": "app"
+      },
+      {
+        "mydbtitle": "American Economic Journal: Macroeconomics",
+        "title": "American Economic Journal: Macroeconomics",
+        "publisher3": "aea",
+        "url_tocken": "mac"
+      }
+    ]
   }
 }

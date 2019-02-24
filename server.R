@@ -1,28 +1,28 @@
 rv <- reactiveValues(WoSExportDT = dfWoSExport,
                      WoSDT=getWoSDT(dfWoS),
-                     ResearchersDT=wosdoc$authors$df, 
-                     TopResearchersByYearDT=wosdoc$authors$topR, 
-                     VerboseResearchersByYearDT=wosdoc$authors$verbR, 
-                     JournalsDT=wosdoc$libstat$jcitescores,
-                     WholeLibraryStatDT=wosdoc$libstat$general,
-                     DetailedLibraryStatDT=wosdoc$libstat$detailed,
-                     PublisherStatDT=wosdoc$publishers,
-                     keywordsmodifiedScores=wosdoc$keywords$modifiedScores,
-                     keywordsmodifiedScoresByYear=wosdoc$keywords$modifiedScoresByYear,
-                     keywordsfrequenciesByYear=wosdoc$keywords$frequenciesByYear,
-                     coherence_mat=wosdoc$top_topic_model$coherence,
-                     top_topic_model=wosdoc$top_topic_model)
+                     ResearchersDT=d$authors$df, 
+                     TopResearchersByYearDT=d$authors$topR, 
+                     VerboseResearchersByYearDT=d$authors$verbR, 
+                     JournalsDT=d$libstat$jcitescores,
+                     WholeLibraryStatDT=d$libstat$general,
+                     DetailedLibraryStatDT=d$libstat$detailed,
+                     PublisherStatDT=d$publishers,
+                     keywordsmodifiedScores=d$keywords$modifiedScores,
+                     keywordsmodifiedScoresByYear=d$keywords$modifiedScoresByYear,
+                     keywordsfrequenciesByYear=d$keywords$frequenciesByYear,
+                     coherence_mat=d$top_topic_model$coherence,
+                     top_topic_model=d$top_topic_model)
 
 #write_rds(g, rdsConfig)
 
 shinyServer(function(input,output,clientData, session){
   # Functions in the server
   updateExportFolders<-function(){
-    g$export$folders<<-dir(g$paths$papers)
-    updateSelectInput(session, "exportFolders", choices=g$export$folders, selected=g$export$folder)
+    d$paths$papers<<-dir(g$paths$papers)
+    updateSelectInput(session, "exportFolders", choices=d$paths$papers, selected=d$select$exportFolder)
   }
   observe({
-    g$export$fileFormat<<-input$exportFileFormats
+    d$select$fileFormat<<-input$exportFileFormats
   })
   observeEvent(input$exportFolders,{
     reloadBibs()
@@ -377,14 +377,14 @@ shinyServer(function(input,output,clientData, session){
   })
   #change export folder
   observe({
-    g$export$folder<<-input$exportFolders
+    d$select$exportFolder<<-input$exportFolders
   })
   # add new export folder
   observeEvent(input$addExportFolder,{
     dir.create(file.path(g$paths$papers, input$newExportFolder))
-    g$export$folder<<-input$newExportFolder
-    g$export$folders<<-c(input$newExportFolder, g$export$folders)
-    updateSelectInput(session, "exportFolders", choices=g$export$folders, selected=input$newExportFolder)
+    d$select$exportFolder<<-input$newExportFolder
+    d$paths$papers<<-c(input$newExportFolder, d$paths$papers)
+    updateSelectInput(session, "exportFolders", choices=d$paths$papers, selected=input$newExportFolder)
     updateTextInput(session, "newExportFolder", value = "")
   })
   #update export folder on the start of each session
@@ -473,41 +473,6 @@ shinyServer(function(input,output,clientData, session){
               ),
               selection = 'single')
   })
-  #load researchers form xlxs file
-  observeEvent(input$loadResearchers,{
-    # Create a Progress object
-    progress_nstep<<-0
-    progress_job<<-9
-    progress <- shiny::Progress$new()
-    progress$set(message = "Loading researchers", value = 0)
-    on.exit(progress$close())
-    # main task
-    
-    wosdoc$authors$df <<-createResearcherDF(progress)
-    dfWoS<<-addResearchers(dfWoS, log_con=NULL, progress)
-    rv$WoSDT<-getWoSDT(dfWoS)
-    rv$ResearchersDT<-wosdoc$authors$df
-    rv$TopResearchersByYearDT<-wosdoc$authors$topR 
-    rv$VerboseResearchersByYearDT<-wosdoc$authors$verbR
-    save(wosdoc, file=rdaWosDoc)
-    progress_nstep<<-progress_nstep + 1
-    msg<-'loaded and added researchers...'
-    if (!is.null(progress)) {
-      updateProgress(progress, detail = msg)
-    }
-    showModal(modalDialog(
-      title = "Note",
-      paste(nrow(wosdoc$authors$df), 
-            "authors for", 
-            wosdoc$authors$df$year %>% 
-              unique() %>% 
-              glue_collapse(sep=", ", last = " and "),  
-            "years loaded..."),
-      easyClose=T,
-      footer = tagList(
-        modalButton("OK"))
-      ))
-  })
   #table with journal SSCI powered by Scopus
   output$tableJournals = DT::renderDataTable({
     datatable(rv$JournalsDT[, ssci_dt_col_names], rownames = F,
@@ -519,35 +484,6 @@ shinyServer(function(input,output,clientData, session){
               ),
               selection = 'single')
   })
-  #load journals cite score from tab delimited files
-  observeEvent(input$loadJscores,{
-    # Create a Progress object
-    progress_nstep<<-0
-    progress_job<<-3
-    progress <- shiny::Progress$new()
-    progress$set(message = "Computing journal cite scores", value = 0)
-    on.exit(progress$close())
-    # main task
-    
-    wosdoc$libstat$jcitescores<<-createCiteScoreDF(xlsxSelectedJournals, jscore_path, NULL, progress)
-    rv$JournalsDT<-wosdoc$libstat$jcitescores
-    dfWoS<<-addCiteScores(dfWoS, NULL, progress)
-    write_rds(dfWoS, g$files$rdsWoS)
-    rv$WoSDT<-dfWoS %>% getWoSDT()
-    showModal(modalDialog(
-      title = "Note",
-      paste(wosdoc$libstat$jcitescores$title %>% 
-              unique() %>% 
-              length(), 
-            "journal cite scores updated",
-            "bibliography database updated and saved to",
-            g$files$rdsWoS),
-      easyClose=T,
-      footer = tagList(
-        modalButton("OK"))
-      ))
-  })
-  
   # text box with full bibliography of the selected record
   output$cur_bibExport = renderUI({
     s = input$tableBibsExport_row_last_clicked
@@ -573,7 +509,7 @@ shinyServer(function(input,output,clientData, session){
     s = input$tablePublisherStat_row_last_clicked
     if (length(s)) {
       j=rv$PublisherStatDT[s,]
-      rv$WholeLibraryStatDT<-wosdoc$libstat$general %>%
+      rv$WholeLibraryStatDT<-d$libstat$general %>%
         filter(publisher3==j$publisher3)
     }
   })
@@ -592,9 +528,9 @@ shinyServer(function(input,output,clientData, session){
     l<-import_bibtex_and_pdf(dfWoS, progress, input$deleteSourcePDFs)
     msg<-"import folder is empty"
     if(!is.null(l)){
-      rv$WholeLibraryStatDT<-wosdoc$libstat$general
-      rv$DetailedLibraryStatDT<-wosdoc$libstat$detailed
-      rv$PublisherStatDT<-wosdoc$libstat$publishers
+      rv$WholeLibraryStatDT<-d$libstat$general
+      rv$DetailedLibraryStatDT<-d$libstat$detailed
+      rv$PublisherStatDT<-d$libstat$publishers
       rv$WoSDT<-getWoSDT(dfWoS)
       msg<-paste(l$report_msg, "Total steps", progress_nstep)
     }
@@ -691,7 +627,7 @@ shinyServer(function(input,output,clientData, session){
     keywords$modifiedScoresByYear<-createKeywordModifiedScoresByYear(dfKeywordModifiedScoreByYear, 2013)
     keywords$frequenciesByYear<-createKeywordFrequenciesByYear(dfKeywordModifiedScoreByYear, 2013)
   
-    wosdoc$keywords<<-keywords
+    d$keywords<<-keywords
     rv$keywordsmodifiedScores=keywords$modifiedScores
     rv$keywordsmodifiedScoresByYear=keywords$modifiedScoresByYear
     rv$keywordsfrequenciesByYear=keywords$frequenciesByYear
@@ -758,8 +694,8 @@ shinyServer(function(input,output,clientData, session){
   })
   #show topic analysis results  
   observeEvent(input$showTopicAnalysisResults,{
-    rv$top_topic_model=wosdoc$top_topic_model
-    rv$coherence_mat=wosdoc$top_topic_model$coherence
+    rv$top_topic_model=d$top_topic_model
+    rv$coherence_mat=d$top_topic_model$coherence
   })
   #table top topic model summary
   output$tableTopicModelSummary = DT::renderDataTable({
@@ -814,17 +750,15 @@ shinyServer(function(input,output,clientData, session){
     }
   })
   onStop(function() {
-    #save configuration
-    write_json(g, "config.json", pretty=T)
     #save main bibliography data.frame
     saveWoSLibrary(dfWoS)
     #save last bibliography records file
-    lastResearchPaperFolder<-file.path(g$paths$papers, g$export$folder)
+    lastResearchPaperFolder<-file.path(g$paths$papers, d$select$exportFolder)
     if(file.exists(lastResearchPaperFolder)){
-      file_path<-file.path(lastResearchPaperFolder,paste("bibliography.rds", sep=''))
+      file_path<-file.path(lastResearchPaperFolder,g$files$rdsbib)
       #print(rv$WoSExportDT)
       write_rds(dfWoSExport, file_path)
-      save(wosdoc, file=rdaWosDoc)
+      write_rds(d, document_path)
       # file_path2<-file.path(lastResearchPaperFolder,paste("bibliography.csv", sep=''))
       # write_csv(dfWoSExport, file_path2)
     }

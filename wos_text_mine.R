@@ -100,8 +100,8 @@ topicAnalysis<-function(df, progress = NULL){
     }, 
     export=c("dtm", "model_dir")) # export only needed for Windows machines
   
-  wosdoc$top_topic_model$model_list<-model_list
-  save(wosdoc, file=rdaWosDoc)
+  d$top_topic_model$model_list<-model_list
+  write_rds(d, document_path)
   
   progress_nstep<<-progress_nstep + 1
   msg<-paste(length(model_list), "models fitted")
@@ -114,7 +114,7 @@ topicAnalysis<-function(df, progress = NULL){
                               coherence = sapply(model_list, function(x) mean(x$coherence)), 
                               stringsAsFactors = FALSE)
   
-  wosdoc$top_topic_model$coherence_mat<-coherence_mat
+  d$top_topic_model$coherence_mat<-coherence_mat
 
   plot(coherence_mat, type = "o")
   
@@ -236,8 +236,8 @@ topicAnalysis<-function(df, progress = NULL){
   
   #View(model$summary)
 
-  wosdoc$top_topic_model$topModel<-model
-  save(wosdoc, file=rdaWosDoc)
+  d$top_topic_model$topModel<-model
+  write_rds(d, document_path)
   
   file_name_rds<-file.path(g$paths$db,"top_research_topics.rds")
   write_rds(model$summary, file_name_rds)

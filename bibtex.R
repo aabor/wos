@@ -124,10 +124,7 @@ exportLibraryToRMarkdown <- function(dfWoSExport, file_path) {
 #' convertDataFrameToRMarkdown(dfWoSExport)
 convertDataFrameToRMarkdown<-function(dfWoSExport){
   dfWoSExport %>% 
-    rowwise() %>% 
-    do({
-      data.frame(text=get_rmarkdown_reference(.), stringsAsFactors = F)
-    }) %>% 
+    mutate(text=pmap(list(key, author, title, keywords), ~get_rmarkdown_reference(key, author, title, keywords))) %>% 
     pull(text) 
 }
 #' Creates RMarkdown reference
@@ -138,12 +135,13 @@ convertDataFrameToRMarkdown<-function(dfWoSExport){
 #' @export
 #'
 #' @examples
-#' get_rmarkdown_reference(dfWoSExport[1,])
-get_rmarkdown_reference<-function(row){
-  keywords<-str_replace_all(row$keywords, " and ", "; ")
-  paste('[@', row$key, ']\r\n', 
-        row$author, '\r\n',
-        "Title: ", row$title, '\r\n',
+#' row<-dfWoSExport[1,]
+#' get_rmarkdown_reference(row$key, row$author, row$title, row$keywords)
+get_rmarkdown_reference<-function(key, author, title, keywords){
+  keywords<-str_replace_all(keywords, " and ", "; ")
+  paste('[@', key, ']\r\n', 
+        author, '\r\n',
+        "Title: ", title, '\r\n',
         "Key words: ", keywords, '\r\n',
         sep='')
 }

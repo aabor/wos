@@ -250,8 +250,8 @@ compute_research_papers_statistics<-function(dfWoS, log_con=NULL, progress=NULL)
     mutate(journal_name=journal) %>% 
     rowwise() %>% 
     mutate(journal=generate_journal_url_tag(journal_name))
-  wosdoc$libstat$general<<-df_whole_library_stat
-  wosdoc$libstat$publishers<<-dfWoS %>% 
+  d$libstat$general<<-df_whole_library_stat
+  d$libstat$publishers<<-dfWoS %>% 
     group_by(publisher3) %>% 
     summarise(publishers=glue_collapse(unique(publisher), sep="; "),
               njournals=length(unique(journal)),
@@ -264,7 +264,7 @@ compute_research_papers_statistics<-function(dfWoS, log_con=NULL, progress=NULL)
     give_echo(log_con, F, progress)
   'Creating separate statistics for each journal...\r\n' %>% 
     give_echo(log_con, T, progress)
-  wosdoc$libstat$detailed<<-separateJournalsStatistics(dfWoSaug, progress)
+  d$libstat$detailed<<-separateJournalsStatistics(dfWoSaug, progress)
   'detailed library statistics was created and exported to configuration...\r\n' %>% 
     give_echo(log_con, T, progress)
   'Library statistics created...\r\n' %>% 
