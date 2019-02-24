@@ -1,3 +1,70 @@
+#' Add additional columns to data frame that indicate the presence of full text and abstract
+#'
+#' @param dfWoS 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#' augment_wos_dataframe(dfWoS)
+augment_wos_dataframe<-function(dfWoS){
+  dfWoS %>% 
+    mutate(IsFullText = ifelse(is.na(file) | file == '', F, T),
+           IsAbstract = ifelse(is.na(abstract) | abstract == '', F, T))
+}
+#' Compute research papers statistics
+#'
+#' @param dfWoS data frame with bibliography records
+#' @param log_con log txt file
+#' @param progress 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#' progress<-NULL
+#' dfWoS$number<-NA
+#' compute_research_papers_statistics(dfWoS)
+compute_research_papers_statistics<-function(dfWoS, log_con=NULL, progress=NULL)
+{
+  dfWoSaug<-augment_wos_dataframe(dfWoS)
+  'computing whole library statistics...\r\n' %>% 
+    give_echo(log_con, T, progress)
+  start_year<-year(Sys.Date())-3
+  df_whole_library_stat <- articlesDescriptives(dfWoSaug, start_year)
+  df_whole_library_stat <- left_join(df_whole_library_stat, 
+                                     libraryDescriptivesJournals(dfWoSaug, start_year), 
+                                     by = 'journal') %>% 
+    filter(!is.na(journal))
+  df_whole_library_stat %<>% mutate_all(funs(replace(., is.na(.), '0/0'))) %>% 
+    mutate(topR=as.numeric(topR),
+           verbR=as.numeric(verbR))
+  df_whole_library_stat %<>%
+    mutate(journal_name=journal) %>% 
+    rowwise() %>% 
+    mutate(journal=generate_journal_url_tag(journal_name))
+  d$libstat$general<<-df_whole_library_stat
+  d$libstat$publishers<<-dfWoS %>% 
+    group_by(publisher3) %>% 
+    summarise(publishers=glue_collapse(unique(publisher), sep="; "),
+              njournals=length(unique(journal)),
+              avgjscore=round(mean(unique(jscore)), 2),
+              nrecords=n(),
+              start=min(year),
+              end=max(year)) %>% 
+    arrange(desc(njournals), desc(avgjscore))
+  'whole library statistics was created...\r\n' %>% 
+    give_echo(log_con, F, progress)
+  'Creating separate statistics for each journal...\r\n' %>% 
+    give_echo(log_con, T, progress)
+  d$libstat$detailed<<-separateJournalsStatistics(dfWoSaug, progress)
+  'detailed library statistics was created...\r\n' %>% 
+    give_echo(log_con, T, progress)
+  'Library statistics created...\r\n' %>% 
+    give_echo(log_con, F, progress)
+  paste(format(Sys.time(),"%Y-%m-%d %H:%M:%S", tz=g$tz), "log closed\r\n") %>% 
+    give_echo(log_con, F, progress)
+}
 #' Totals for library descriptive statistics
 #'
 #' @param df data.frame
@@ -111,58 +178,6 @@ articlesDescriptives <- function(dfWoSaug, start_year = 2012) {
     mutate_at(c("topR", "verbR"),funs(replace(., is.na(.), 0))) %>% 
     ungroup
   ret
-}
-#' Generate journal URL tag
-#'
-#' Use this tag in UI, for example in Data Table cells
-#' 
-#' @param jtitle string journal title
-#'
-#' @return html tag with journal title and weblink
-#' @export
-#'
-#' @examples
-#' df<-df_whole_library_stat[1,]
-#' df_all<-df_whole_library_stat %>% filter(publisher3=="oup")
-#' df<-df_all[1,]
-#' (journal<-df$journal)
-#' journal<-"Journal of Development Economics"
-#' generate_journal_url_tag(journal)
-generate_journal_url_tag <- function(journal) {
-  #print(journal)
-  url_tag<-journal
-  url_path<-""
-  j=d$journals %>% 
-    filter(title==journal | mydbtitle==journal) %>% 
-    select(title, publisher3, url, url_tocken)
-  #print(j)
-  if(j$publisher3 == "elr"){
-    jtitle<-j$title
-    jtitle<-str_replace_all(jtitle, pattern = "[[:punct:]]", replacement = "")
-    jname<-str_to_lower(jtitle) %>% str_split(" ") %>% unlist %>% glue_collapse(sep="-")
-    url_path<-file.path(j$url, jname)
-  }
-  if(j$publisher3 %in% c("wly", "emd", "snr", "tyr")) {
-    url_path<-file.path(j$url, j$url_tocken)
-  }
-  if(j$publisher3=="oup"){
-    url_path<-file.path(j$url, j$url_tocken, "issue")
-  }
-  if(j$publisher3=="aea"){
-    url_path<-file.path(j$url, j$url_tocken, "issues")
-  }
-  
-  if(j$publisher3=="cup"){
-    jname<-str_to_lower(j$title) %>% str_split(" ") %>% unlist %>% glue_collapse(sep="-")
-    url_path<-file.path(j$url, jname, "all-issues")
-  }
-  if(j$publisher3 %in% c("now", "ares")){
-    url_path<-j$url
-  }
-  if(url_path!=""){
-    url_tag<-a(journal, href=url_path, target="_blank") %>% as.character()
-  }
-  url_tag
 }
 #' Journal descriptives
 #'

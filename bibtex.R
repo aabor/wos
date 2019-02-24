@@ -33,7 +33,7 @@ convertDataFrameToBibTexHTML<-function(df){
 convertDataFrameToBibTex<-function(df){
   print('Start converting data frame...')
   df %<>% 
-    select(key, doi, publisher, file, journal, author, url, year, volume, month, 
+    select(key, doi, publisher3, file, journal, author, year, volume, month, 
            pages, title, keywords, abstract)
   (cols <- names(df))
   (sep_cols <- paste('sep', cols, sep = '_'))

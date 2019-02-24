@@ -48,6 +48,7 @@ library(purrr)
 
 #######################################################################################
 ##Graphics
+library(shiny)
 # Functions to improve user experience of shiny apps by Dean Attali
 library(shinyjs)
 # Create dashboards with 'Shiny'. A dashboard has three parts: a header, a sidebar, and a body. 

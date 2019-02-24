@@ -15,7 +15,7 @@
 #' @examples
 #' progress<-NULL
 #' deleteSourcePDFs<-F
-#' import_bibtex_and_pdf(dfWoS)
+#' dfWoS<-import_bibtex_and_pdf(dfWoS)
 import_bibtex_and_pdf<-function(dfWoS, progress=NULL, deleteSourcePDFs=F){
   #start log
   log_path <- file.path(g$paths$db,'reindex_dataframe.txt')
@@ -23,7 +23,6 @@ import_bibtex_and_pdf<-function(dfWoS, progress=NULL, deleteSourcePDFs=F){
   log_con <- file(log_path, open = "a")
   paste(format(Sys.time(),"%Y-%m-%d %H:%M:%S", tz=g$tz), "log started\r\n") %>%   
     give_echo(log_con, T, progress)
-  #main 
   dfWoS %<>% 
     mutate(doi=str_to_lower(doi))
   "loading bibliogrpaphy files from disk...\r\n" %>% 
@@ -31,95 +30,84 @@ import_bibtex_and_pdf<-function(dfWoS, progress=NULL, deleteSourcePDFs=F){
   nrecordsAtStart<-nrow(dfWoS)
   rx <- "\\{(?:[^{}]*|(?R))*\\}" # matching balanced curly brackets
   files <- dir(g$paths$new_pdf, pattern = "\\.bib|\\.bibtex|\\.txt$", full.names = TRUE, recursive = TRUE)
-  if(length(files)>0){
-    bibs <- map(files, function(f) {
-      paste("extracting bib references", basename(f), "...") %>% 
-        give_echo(log_con, F, progress)
-      bib<-readLines(f, encoding = "UTF-8") %>% 
-        paste(collapse = " ") %>% 
-        str_replace_all(pattern = '\n|\r|\t', ' ') %>% 
-        str_replace_all('&Amp;', '&') %>% 
-        regmatches(., gregexpr(pattern=rx, ., perl = TRUE)) %>% 
-        map(str_sub, 2, -2) %>% 
-        map(str_trim) %>% 
-        map(str_squish) %>% 
-        map(str_replace, pattern = "[ ,]+", replacement = ",")
-      paste("done\r\n") %>% 
-        give_echo(log_con, F, progress)
-      bib
-    }) %>% unlist
-    paste(length(bibs), "bibliography items loaded\r\n") %>% 
+  bibs <- map(files, function(f) {
+    paste("extracting bib references", basename(f), "...") %>% 
       give_echo(log_con, F, progress)
-    
-    if(deleteSourcePDFs){
-      rem_res<-sum(file.remove(files))
-      paste(rem_res, "bibliography files removed from disk\r\n") %>% 
-        give_echo(log_con, F, progress)
-    }
-    paste('converting', length(bibs), '.bibtex records to data.frame...') %>% 
-      give_echo(log_con, T, progress)
-    
-    non_digit <- "[^\\d]"
-    lLoadedBibs<-map(bibs, bib_to_df, log_con, progress) 
-    dfLoadedBibs<-lLoadedBibs[!is.na(lLoadedBibs)] %>% 
-      reduce(bind_rows)%>% 
-      mutate(year=str_replace_all(year, pattern=non_digit, '')) %>% 
-      select(doi, journal, author, year, volume, number, month, pages, title, keywords, abstract) %>% 
-      subset(!is.na(author)) %>% 
-      subset(!is.na(doi)) %>% 
-      mutate(doi=str_replace(doi, pattern="https://doi.org/", replacement = "")) %>% 
-      mutate(doi=str_trim(doi),
-             author=str_trim(author),
-             year=str_trim(year),
-             volume=str_trim(volume),
-             number=str_trim(number),
-             month=str_trim(month),
-             pages=str_trim(pages),
-             journal=str_trim(journal),
-             title=str_trim(title),
-             keywords=str_trim(keywords),
-             abstract=str_trim(abstract)) %>% 
-      mutate(journal=  str_replace_all(journal, "[^[[:alpha:]]|[[:punct:]]|[[:space:]]]", '')) %>% 
-      mutate(pages=str_replace_all(pages, pattern = "[^\\d]+", '-'),
-             journal=str_replace_all(journal, pattern = '&', 'and'),
-             abstract=str_replace_all(abstract, "^(?:Abstract |ABSTRACT|Abstract)", '')) %>% 
-      mutate(key=NA, jacro=NA, jscore=NA, quartile=NA, top10=NA, ascore=NA, nrecords=NA, 
-             publisher3=NA, publisher=NA, updated=NA,
-             file=NA, url=NA) %>% 
-      addCiteScores(log_con, progress) %>% 
-      correctAuthorName(log_con, progress) %>% 
-      createBibKeys(log_con, progress) %>% 
-      allVariablesToCharacters() %>% 
-      mutate(year=as.numeric(year),
-             number=as.numeric(number),
-             jscore=as.numeric(jscore),
-             ascore=as.numeric(ascore),
-             nrecords=as.numeric(nrecords),
-             updated=Sys.time()) %>% 
-      arrange(journal, desc(year), desc(volume))
-    paste("converted successfully", nrow(dfLoadedBibs), "bibliography records\r\n") %>% 
+    bib<-readLines(f, encoding = "UTF-8") %>% 
+      paste(collapse = " ") %>% 
+      str_replace_all(pattern = '\n|\r|\t', ' ') %>% 
+      str_replace_all('&Amp;', '&') %>% 
+      regmatches(., gregexpr(pattern=rx, ., perl = TRUE)) %>% 
+      map(str_sub, 2, -2) %>% 
+      map(str_trim) %>% 
+      map(str_squish) %>% 
+      map(str_replace, pattern = "[ ,]+", replacement = ",")
+    paste("done\r\n") %>% 
       give_echo(log_con, F, progress)
-    nbefore<-nrow(dfWoS)
-    records_to_update<-intersect(dfLoadedBibs$key, dfWoS$key)
-    nrecords_to_update<-length(records_to_update)
-    dfWoS %>% names
-    #add new records to old data.frame
-    # dfWoS %<>% 
-    #   mutate(number=as.numeric(number))
-    dfWoS<-dfWoS %>% 
+    bib
+  }) %>% unlist
+  paste(length(bibs), "bibliography items loaded\r\n") %>% 
+    give_echo(log_con, F, progress)
+  
+  if(deleteSourcePDFs){
+    rem_res<-sum(file.remove(files))
+    paste(rem_res, "bibliography files removed from disk\r\n") %>% 
+      give_echo(log_con, F, progress)
+  }
+  paste('converting', length(bibs), '.bibtex records to data.frame...') %>% 
+    give_echo(log_con, T, progress)
+  
+  non_digit <- "[^\\d]"
+  jpublisher<-d$journals %>% 
+    mutate(journal=title) %>% 
+    select(journal, publisher3)
+  dfLoadedBibs<-map_df(bibs, bib_to_df, log_con, progress) %>% 
+    mutate(year=str_replace_all(year, pattern=non_digit, '')) %>% 
+    select(doi, journal, author, year, volume, number, month, pages, title, keywords, abstract) %>% 
+    subset(!is.na(author)) %>% 
+    subset(!is.na(doi)) %>% 
+    mutate(doi=str_replace(doi, pattern="https://doi.org/", replacement = "")) %>% 
+    mutate(doi=str_trim(doi),
+           author=str_trim(author),
+           year=str_trim(year),
+           volume=str_trim(volume),
+           number=str_trim(number),
+           month=str_trim(month),
+           pages=str_trim(pages),
+           journal=str_trim(journal),
+           title=str_trim(title),
+           keywords=str_trim(keywords),
+           abstract=str_trim(abstract),
+           file=NA) %>% 
+    mutate(journal=  str_replace_all(journal, "[^[[:alpha:]]|[[:punct:]]|[[:space:]]]", '')) %>% 
+    mutate(pages=str_replace_all(pages, pattern = "[^\\d]+", '-'),
+           journal=str_replace_all(journal, pattern = '&', 'and'),
+           abstract=str_replace_all(abstract, "^(?:Abstract |ABSTRACT|Abstract)", '')) %>% 
+    left_join(jpublisher, by="journal") %>% 
+    correctAuthorName(log_con, progress) %>% 
+    createBibKeys(log_con, progress) %>% 
+    mutate(year=as.numeric(year),
+           number=as.numeric(number),
+           updated=Sys.time()) %>% 
+    arrange(journal, desc(year), desc(volume)) %>% 
+    select(key, jscore, doi, publisher3, jacro, journal, author, year, volume, number, month, pages, 
+         title, keywords, abstract, file, updated)
+  
+  paste("converted successfully", nrow(dfLoadedBibs), "bibliography records\r\n") %>% 
+    give_echo(log_con, F, progress)
+  nbefore<-nrow(dfWoS)
+  records_to_update<-intersect(dfLoadedBibs$key, dfWoS$key)
+  nrecords_to_update<-length(records_to_update)
+  
+  dfWoS<-dfWoS %>% 
       filter(!(key %in% records_to_update)) %>% 
       bind_rows(dfLoadedBibs) %>% 
       distinct(key, .keep_all = T) %>% 
       filter(!is.na(journal)) %>% 
-      mutate(doi=str_to_lower(doi)) %>% 
-      sort_columns_in_wos_dataframe
-    nafter<-nrow(dfWoS)
-    paste(nbefore - nafter, "records with duplicate keys have been deleted", nrecords_to_update, "will be updated\r\n") %>% 
-      give_echo(log_con, F, progress)
-    "saving data.frame in .rds format\r\n" %>% 
-      give_echo(log_con, F, progress)
-    saveWoSLibrary(dfWoS)
-  }
+      mutate(doi=str_to_lower(doi))
+  nafter<-nrow(dfWoS)
+  paste(nbefore - nafter, "records with duplicate keys have been deleted", nrecords_to_update, "will be updated\r\n") %>% 
+    give_echo(log_con, F, progress)
 
   files<-dir(g$paths$new_pdf, pattern = "\\.zip$", full.names = TRUE, recursive = TRUE)
   nfiles<-length(files)
@@ -144,35 +132,32 @@ import_bibtex_and_pdf<-function(dfWoS, progress=NULL, deleteSourcePDFs=F){
     right_join(df_filename_doi, by="doi") %>% 
     mutate(file_from=ifelse(is.na(file), NA, file.path(g$paths$new_pdf, basename(file))),
            file_to=ifelse(is.na(file), NA,file.path(g$paths$pdf, paste(key,".pdf", sep="")))) %>% 
-    mutate(file=ifelse(is.na(file), NA,paste(key,".pdf", sep="")))
+    mutate(file=ifelse(is.na(file), NA,paste(key,".pdf", sep=""))) %>% 
+    filter(!is.na(key))
   res<-0
   if(nrow(dfNewPDFs)>0){
       if(deleteSourcePDFs){
         "deleting source pdf files...\r\n" %>% 
           give_echo(log_con, T, progress)
         dfNewPDFs %>% 
-          rowwise() %>% 
-          do({
-            res<-data.frame(file=basename(.$file_from), 
-                            res=file.rename(from = .$file_from, to = .$file_to))
-            paste("file", .$file_from, "deleted\r\n") %>% 
+          mutate(res=pmap(list(file_from, file_to), function(ff, ft){
+            res<-file.rename(from = ff, to = ft)
+            paste("file", ff, "deleted", ft, "\r\n") %>% 
               give_echo(log_con, F, progress)
             res
-          })
+          }))
         paste(nrow(dfNewPDFs), "files deleted\r\n") %>% 
           give_echo(log_con, F, progress)
       }else{
         "coping pdf files...\r\n" %>% 
           give_echo(log_con, T, progress)
         dfNewPDFs %>% 
-          rowwise() %>% 
-          do({
-            res<-data.frame(file=basename(.$file_from), 
-                       res=file.copy(from = .$file_from, to = .$file_to, overwrite = T))
-            paste("file", .$file_from, "copied to", .$file_to, "\r\n") %>% 
+          mutate(res=pmap(list(file_from, file_to), function(ff, ft){
+            res<-file.copy(from = ff, to = ft, overwrite = T)
+            paste("file", ff, "copied to", ft, "\r\n") %>% 
               give_echo(log_con, F, progress)
             res
-          })
+          }))
         paste(nrow(dfNewPDFs), "files copied\r\n")
       }
   }
@@ -182,14 +167,12 @@ import_bibtex_and_pdf<-function(dfWoS, progress=NULL, deleteSourcePDFs=F){
   dfWoS %<>% 
     filter(!(title %in% titles_to_delete)) %>% 
     distinct(key, .keep_all = T) %>% 
-    check_pdf_file_references(log_con, progress) %>% 
-    addResearchers(log_con, progress)
+    check_pdf_file_references(log_con, progress)
   nrecordsAtEnd<-nrow(dfWoS)
   nNewRecords<-nrecordsAtEnd-nrecordsAtStart
   report_msg<-paste("In old data base", nrecordsAtStart, "records, in updated data base", nrecordsAtEnd,
         "records \r\nIn total", nNewRecords, "records added \r\n")
   give_echo(report_msg, log_con, F, progress)
-  l<-list()
   "saving data.frame in .bibtex format\r\n" %>% 
     give_echo(log_con, T, progress)
   saveDataFrameToBibTeX(dfWoS, g$files$bibWoS)
@@ -198,79 +181,8 @@ import_bibtex_and_pdf<-function(dfWoS, progress=NULL, deleteSourcePDFs=F){
   saveWoSLibrary(dfWoS)
   "pdf files imported, data frame saved\r\n" %>% 
     give_echo(log_con, F, progress)
-  dfWoS<<-dfWoS
-  l$report_msg<-paste(report_msg, "\r\nFull log report has been saved to", log_path)
-  
-  #library statistics
-  compute_research_papers_statistics(dfWoS, log_con, progress)
   close(log_con)
-  l
-}
-#' Add additional columns to data frame that indicate the presence of full text and abstract
-#'
-#' @param dfWoS 
-#'
-#' @return
-#' @export
-#'
-#' @examples
-#' augment_wos_dataframe(dfWoS)
-augment_wos_dataframe<-function(dfWoS){
-  dfWoS %>% 
-    mutate(IsFullText = ifelse(is.na(file) | file == '', F, T),
-           IsAbstract = ifelse(is.na(abstract) | abstract == '', F, T))
-}
-#' Compute research papers statistics
-#'
-#' @param dfWoS data frame with bibliography records
-#' @param log_con log txt file
-#' @param progress 
-#'
-#' @return
-#' @export
-#'
-#' @examples
-#' progress<-NULL
-#' compute_research_papers_statistics(dfWoS)
-compute_research_papers_statistics<-function(dfWoS, log_con=NULL, progress=NULL)
-{
-  dfWoSaug<-augment_wos_dataframe(dfWoS)
-  'computing whole library statistics...\r\n' %>% 
-    give_echo(log_con, T, progress)
-  start_year<-year(Sys.Date())-3
-  df_whole_library_stat <- articlesDescriptives(dfWoSaug, start_year)
-  df_whole_library_stat <- left_join(df_whole_library_stat, 
-                                     libraryDescriptivesJournals(dfWoSaug, start_year), 
-                                     by = 'journal') %>% 
-    filter(!is.na(journal))
-  df_whole_library_stat %<>% mutate_all(funs(replace(., is.na(.), '0/0'))) %>% 
-    mutate(topR=as.numeric(topR),
-           verbR=as.numeric(verbR))
-  df_whole_library_stat %<>%
-    mutate(journal_name=journal) %>% 
-    rowwise() %>% 
-    mutate(journal=generate_journal_url_tag(journal_name))
-  d$libstat$general<<-df_whole_library_stat
-  d$libstat$publishers<<-dfWoS %>% 
-    group_by(publisher3) %>% 
-    summarise(publishers=glue_collapse(unique(publisher), sep="; "),
-              njournals=length(unique(journal)),
-              avgjscore=round(mean(unique(jscore)), 2),
-              nrecords=n(),
-              start=min(year),
-              end=max(year)) %>% 
-    arrange(desc(njournals), desc(avgjscore))
-  'whole library statistics was created and exported to configuration...\r\n' %>% 
-    give_echo(log_con, F, progress)
-  'Creating separate statistics for each journal...\r\n' %>% 
-    give_echo(log_con, T, progress)
-  d$libstat$detailed<<-separateJournalsStatistics(dfWoSaug, progress)
-  'detailed library statistics was created and exported to configuration...\r\n' %>% 
-    give_echo(log_con, T, progress)
-  'Library statistics created...\r\n' %>% 
-    give_echo(log_con, F, progress)
-  paste(format(Sys.time(),"%Y-%m-%d %H:%M:%S", tz=g$tz), "log closed\r\n") %>% 
-    give_echo(log_con, F, progress)
+  dfWoS
 }
 #' Get doi data.frame
 #'

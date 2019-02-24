@@ -15,6 +15,7 @@ create_wosdoc<-function(){
   d$filters$nrecord<-list()
   d$libstat<-list()
   d$authors<-list()
+  d$colnames<-list()
   d$paths$papers<-dir(g$paths$papers)
   d$select$paper<-""
   d$select$fileFormat<-".rds"
@@ -60,6 +61,14 @@ update_wosdoc<-function(d, dfWoS){
     map(unlist) %>% 
     unlist %>% 
     unique()
+  d$colnames$cjcs<-names(d$libstat$jcitescores)
+  d$colnames$cjcs_citescores<-cjcs[str_detect(cjcs, "^sc")][1:3]
+  d$colnames$ssci_dt<-c(g$colnames$cjcs_main, d$colnames$cjcs_citescores, "url_tocken")
+  d$colnames$ssci_dt_shown<-c("Journal", "J", "Pub", "Q", "Perc", d$colnames$cjcs_citescores, "Tocken")
+  
+  #library statistics
+  compute_research_papers_statistics(dfWoS)
+  
   d
 }
 #' Create cite scores data frame
@@ -422,4 +431,52 @@ addResearchers <- function(dfWoS, log_con=NULL, progress=NULL) {
     give_echo(log_con, F, progress)
   
   dfWoS
+}
+#' Generate journal URL tag
+#'
+#' Use this tag in UI, for example in Data Table cells
+#' 
+#' @param jtitle string journal title
+#'
+#' @return html tag with journal title and weblink
+#' @export
+#'
+#' @examples
+#' journal<-"Journal of Development Economics"
+#' generate_journal_url_tag(journal)
+generate_journal_url_tag <- function(journal) {
+  #print(journal)
+  url_tag<-journal
+  url_path<-""
+  j=d$journals %>% 
+    filter(title==journal | mydbtitle==journal) %>% 
+    select(title, publisher3, url, url_tocken)
+  #print(j)
+  if(j$publisher3 == "elr"){
+    jtitle<-j$title
+    jtitle<-str_replace_all(jtitle, pattern = "[[:punct:]]", replacement = "")
+    jname<-str_to_lower(jtitle) %>% str_split(" ") %>% unlist %>% glue_collapse(sep="-")
+    url_path<-file.path(j$url, jname)
+  }
+  if(j$publisher3 %in% c("wly", "emd", "snr", "tyr")) {
+    url_path<-file.path(j$url, j$url_tocken)
+  }
+  if(j$publisher3=="oup"){
+    url_path<-file.path(j$url, j$url_tocken, "issue")
+  }
+  if(j$publisher3=="aea"){
+    url_path<-file.path(j$url, j$url_tocken, "issues")
+  }
+  
+  if(j$publisher3=="cup"){
+    jname<-str_to_lower(j$title) %>% str_split(" ") %>% unlist %>% glue_collapse(sep="-")
+    url_path<-file.path(j$url, jname, "all-issues")
+  }
+  if(j$publisher3 %in% c("now", "ares")){
+    url_path<-j$url
+  }
+  if(url_path!=""){
+    url_tag<-a(journal, href=url_path, target="_blank") %>% as.character()
+  }
+  url_tag
 }

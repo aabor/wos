@@ -58,23 +58,19 @@ GetBibKey <- function(publisher3, author, year, pages) {
 #'@export
 #'
 #' @examples
-#' dfNewBib<-dfWoS
+#' dfNewBib<-dfLoadedBibs
 #' nrow(dfNewBib)
 #' createBibKeys(dfNewBib) %>% head
 createBibKeys <- function(dfNewBib,  log_con=NULL, progress=NULL) {
   'Creating bib keys...' %>% 
     give_echo(log_con, T, progress)
-  df_left<-dfNewBib %>% 
-    select(-jacro, -jscore, -publisher3, -publisher)
   df_right<-d$libstat$jcitescores %>% 
     mutate(journal=title) %>% 
-    select(journal, jacro, jscore, publisher3, publisher)
+    select(journal, jacro, jscore)
   
-  df <- left_join(df_left, df_right, by = "journal") %>% 
-    rowwise() %>%
-    mutate(key = GetBibKey(publisher3, author, year, pages)) %>% 
+  df <- left_join(dfNewBib, df_right, by = "journal") %>% 
+    mutate(key =pmap_chr(list(publisher3, author, year, pages), GetBibKey)) %>% 
     distinct(key, .keep_all = T) %>% 
-    sort_columns_in_wos_dataframe %>% 
     arrange(journal, desc(year))
   paste('created', nrow(df), 'bib keys...') %>% 
     give_echo(log_con, F, progress)
@@ -100,21 +96,17 @@ correctAuthorName <- function(df, log_con=NULL, progress=NULL) {
     give_echo(log_con, T, progress)
   df1 <- filter(df, !str_detect(author, pattern = ','))
   df2 <- filter(df, str_detect(author, pattern = ','))
-  dfAuthors<-df1 %>% 
-    rowwise() %>% 
-    do({
-      author<-""
-      paste("correcting names:", .$publisher3, .$author, "\r\n") %>% 
+  df1<-df1 %>% 
+    mutate(author=pmap_chr(list(author, publisher3), function(author, publisher3){
+      ret<-""
+      paste("correcting names:", publisher3, author, "\r\n") %>% 
         give_echo(log_con, F, progress)
-      auths<-str_split(.$author, pattern = ' and ') %>% unlist
-      publisher3<-.$publisher3
+      auths<-str_split(author, pattern = ' and ') %>% unlist
       if(publisher3=="wly"){
         auths<-map(auths, str_replace, " ", ", ") %>% unlist
-        author=glue_collapse(auths, sep = ' and ')
+        ret=glue_collapse(auths, sep = ' and ')
       }else{
-#        auths<-str_split(df1[1, "author"], pattern = " and ") %>% unlist
         l1 <- str_split(auths, pattern = " ")
-#        print(l1)
         l2<-map(l1, function(auth) {
           (auth <- str_trim(auth))
           (len <- length(auth))
@@ -124,15 +116,13 @@ correctAuthorName <- function(df, log_con=NULL, progress=NULL) {
             (auth <- paste(lname, fname, sep = ', '))
           }
         })
-        author<-paste(l2, collapse=' and ')
+        ret<-glue_collapse(l2, sep=' and ')
       }
-      data.frame(author=author, stringsAsFactors = F)
-    })
-  df1$author<-dfAuthors$author
+      ret
+    }))
   df <- bind_rows(df1, df2) %>% 
-    rowwise() %>%
-    mutate(author=str_to_title(author)) %>% 
-    mutate(author=str_replace_all(author, pattern = " And ", replacement = " and "))
+    mutate(author=map_chr(author, str_to_title)) %>% 
+    mutate(author=map_chr(author, str_replace_all, pattern = " And ", replacement = " and "))
   print('Author`s names corrected.')
   df
 }
@@ -146,9 +136,9 @@ correctAuthorName <- function(df, log_con=NULL, progress=NULL) {
 #' @examples
 #' bib<-bibs[1]
 bib_to_df <- function(bib,  log_con=NULL, progress=NULL) {
+  print(bib)
   tryCatch({
     pattern<-",[ ]*([\\w]+)[ ]*="
-#    pattern <- "," %R% zero_or_more(' ') %R% capture(one_or_more(WRD)) %R% zero_or_more(' ') %R% "="
     fields <- str_match_all(bib, pattern)[[1]][, 2]
     (fields <- tolower(fields))
     field_values <- str_replace_all(bib, pattern = pattern, '\t') %>%
@@ -230,4 +220,19 @@ getAPAstyleBib<-function(tbl)
         'Keywords: ', ifelse(is.na(tbl$keywords), 'None', tbl$keywords), '.<br/>', 
         'Abstract: ', ifelse(is.na(tbl$abstract), 'None', tbl$abstract), '.',
         sep='')
+}
+#' Select and order columns in data.frame
+#'
+#' @param df data.frame with bibliography records
+#'
+#' @return data.frame with ordered columns
+#' @export
+#'
+#' @examples
+#' sort_columns_in_wos_dataframe(dfWoS)
+sort_columns_in_wos_dataframe<-function(df){
+  df %>% 
+    select(key, jscore, quartile, top10, ascore, nrecords, doi, publisher3,  
+           file, jacro, journal, author, url, year, volume, number, month, pages, 
+           title, keywords, abstract, updated)
 }
