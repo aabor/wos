@@ -20,10 +20,11 @@ create_wosdoc<-function(){
   d$select$paper<-""
   d$select$fileFormat<-".rds"
   d$select$exportFolder<-""
-  d$journals<-g$specs$journals %>% 
+  myjournals<-g$specs$journals %>% 
     left_join(g$specs$publishers, by="publisher3") %>% 
     as_tibble()
-  d$libstat$jcitescores<-createCiteScoreDF(g$paths$jscore)
+  d$journals<-myjournals
+  d$libstat$jcitescores<-createCiteScoreDF(myjournals, g$paths$jscore)
   d$authors$df<-createResearcherDF()
   d
 }
@@ -41,15 +42,17 @@ update_wosdoc<-function(d, dfWoS){
   d$filters$year$min<-min(d$filters$years)
   d$filters$year$max<-max(d$filters$years)
   
-  d$filters$jscores<-dfWoS$jscore %>% unique()
+  d$citeScores<-getCiteScoresDF(dfWoS)
+  d$filters$jscores<-d$citeScores$jscore %>% unique()
   d$filters$jscore$min<-min(d$filters$jscores, na.rm = T)
   d$filters$jscore$max<-max(d$filters$jscores, na.rm = T)
   
-  d$filters$ascores<-dfWoS$ascore %>% unique()
+  d<-addResearcherScoresDF(d, dfWoS)
+  d$filters$ascores<-d$authors$authorScores$ascore %>% unique()
   d$filters$ascore$min<-min(d$filters$ascores, na.rm = T)
   d$filters$ascore$max<-max(d$filters$ascores, na.rm = T)
   
-  d$filters$nrecords<-dfWoS$nrecords %>% unique()
+  d$filters$nrecords<-d$authors$authorScores$nrecords %>% unique()
   d$filters$nrecord$min<-min(d$filters$nrecords, na.rm = T)
   d$filters$nrecord$max<-max(d$filters$nrecords, na.rm = T)
   
@@ -62,12 +65,13 @@ update_wosdoc<-function(d, dfWoS){
     unlist %>% 
     unique()
   d$colnames$cjcs<-names(d$libstat$jcitescores)
-  d$colnames$cjcs_citescores<-cjcs[str_detect(cjcs, "^sc")][1:3]
+  nsm<-d$colnames$cjcs
+  d$colnames$cjcs_citescores<-nsm[str_detect(nsm, "^sc")][1:3]
   d$colnames$ssci_dt<-c(g$colnames$cjcs_main, d$colnames$cjcs_citescores, "url_tocken")
   d$colnames$ssci_dt_shown<-c("Journal", "J", "Pub", "Q", "Perc", d$colnames$cjcs_citescores, "Tocken")
   
   #library statistics
-  compute_research_papers_statistics(dfWoS)
+  d<-compute_research_papers_statistics(d, dfWoS)
   
   d
 }
@@ -91,8 +95,7 @@ update_wosdoc<-function(d, dfWoS){
 #' progress<-NULL
 #' log_con<-NULL
 #' sc<-createCiteScoreDF(g$paths$jscore_path) %>% head
-createCiteScoreDF <- function(jscore_path, log_con=NULL, progress=NULL) {
-  myjournals<-d$journals
+createCiteScoreDF <- function(myjournals, jscore_path, log_con=NULL, progress=NULL) {
   files<-dir(g$paths$jscore, pattern = "\\.txt$", full.names = T, recursive = F)
   if(length(files)==0)return(NULL)
   files<-sort(files, decreasing = T)
@@ -162,13 +165,12 @@ createCiteScoreDF <- function(jscore_path, log_con=NULL, progress=NULL) {
     mutate(jacro=pmap_chr(list(title), getAcro)) %>% 
     select(title, jacro, jscore, publisher3, publisher, quartile, top10, !!arrange_quo:!!last_col_quo, url_tocken) %>% 
     mutate(jscore=as.numeric(jscore)) %>% 
-    arrange(desc(jscore))
-  df %>% 
-    left_join(g$specs$publishers %>% select(-publisher), by="publisher3")->df
+    arrange(desc(jscore)) %>% 
+    left_join(g$specs$publishers %>% select(-publisher), by="publisher3") %>% 
+    mutate(url_title=pmap_chr(list(title, publisher3, url, url_tocken), generate_journal_url_tag))
+
   'cite score database created...' %>% 
     give_echo(log_con, T, progress)
-  df %<>%  
-    mutate(url_title=pmap_chr(list(title), generate_journal_url_tag))
   df
 }
 #' Load cite score statistics in format of 2017 year
@@ -273,17 +275,18 @@ createResearcherDF <- function(progress=NULL) {
 #' df<-dfWoS
 #' res<-getWoSDT(df)
 #' res$jacro %>% unique()
-getWoSDT <- function() {
-  WoSDT<-addCiteScores(dfWoS)
-  df %>%
-    mutate(title7 = paste(str_sub(title, 1, 35), "...", sep = ''),
+#' res %>% filter(is.na(key))
+getWoSDT <- function(dfWoS) {
+  dfWoS %>% 
+    left_join(d$citeScores, by="key") %>% 
+    left_join(d$authors$authorScores, by="key") %>% 
+    mutate(updated = format(updated, "%Y-%m-%d %H:%M:%S", tz = g$tz),
            authors = str_replace_all(author, " and ", "; ")) %>%
     mutate(
-      authors = paste(str_sub(authors, 1, 12), "...", sep = ''),
-      updated = format(updated, "%Y-%m-%d %H:%M:%S", tz = g$tz)
-    ) %>%
+      title7 = paste(str_sub(title, 1, 35), "...", sep = ''),
+      authors = paste(str_sub(authors, 1, 12), "...", sep = '')) %>%
     mutate(pdf = ifelse(is.na(file), NA, '<img src="pdf.ico" height="25"></img>')) %>%
-    #    dplyr::select(pdf, authors, jscore, ascore, nrecords, title7, year, journal, publisher3, updated) %>%
+    select(pdf, key, authors, jscore, ascore, nrecords, title7, year, journal, publisher3, jacro, updated, file, author, doi, volume, month, keywords, abstract, title, pages) %>%
     arrange(desc(updated), desc(pdf), desc(ascore), desc(year))
 }
 #' Add cite scores
@@ -305,24 +308,16 @@ getWoSDT <- function() {
 #' dfLoadedBibs$journal
 #' d$libstat$jcitescores<-createCiteScoreDF(jscore_path, NULL, progress)
 #' df<-dfWoS
-addCiteScores<-function(df,  log_con=NULL, progress=NULL){
+getCiteScoresDF<-function(dfWoS,  log_con=NULL, progress=NULL){
   "Adding cite scores..." %>% 
     give_echo(log_con, T, progress)
   dfCiteScores<-d$libstat$jcitescores %>% 
     mutate(journal=title) %>%
-    select(journal, jacro, jscore, quartile, top10, publisher3, publisher)
-  dfWoS_short<-df %>% 
-    select(-jacro, -jscore, -publisher3, -publisher)
-  ret<-dfWoS_short %>% left_join(dfCiteScores, by="journal") %>%
-    mutate(year=as.numeric(year),
-           jscore=as.numeric(jscore),
-           ascore=as.numeric(ascore),
-           nrecords=as.numeric(nrecords)) %>% 
-    sort_columns_in_wos_dataframe
-  progress_nstep<<-progress_nstep + 1
-  'done...' %>% 
-    give_echo(log_con, F, progress)
-  dfWoS
+    select(journal, jacro, jscore, quartile, top10)
+  dfWoS %>% 
+    select(key, journal) %>% 
+    left_join(dfCiteScores, by="journal") %>% 
+    select(-journal)
 }
 #' Add researchers
 #'
@@ -342,7 +337,7 @@ addCiteScores<-function(df,  log_con=NULL, progress=NULL){
 #' res %>% filter(is.na(ascore))
 #' log_con<-NULL
 #' progress<-NULL
-addResearchers <- function(dfWoS, log_con=NULL, progress=NULL) {
+addResearcherScoresDF <- function(d, dfWoS, log_con=NULL, progress=NULL) {
   dfResearchers<-d$authors$df
   (years <- unique(dfResearchers$year))
   frontier_year <- min(setdiff(years, min(years)))
@@ -384,31 +379,20 @@ addResearchers <- function(dfWoS, log_con=NULL, progress=NULL) {
     mutate(nrecords=as.integer(nrecords))
   'created verbose researchers data.frame...\r\n' %>% 
     give_echo(log_con, T, progress)
-  dfWoS <- dfWoS %>%
-    select(-nrecords) %>% 
-    left_join(df_verb_WoS, by = 'key') %>%
-    mutate(nrecords = as.integer(ifelse(is.na(nrecords), 1, nrecords)) ) %>% 
-    mutate(year=as.numeric(year),
-           jscore=as.numeric(jscore),
-           ascore=as.numeric(ascore),
-           nrecords=as.numeric(nrecords)) %>% 
-    sort_columns_in_wos_dataframe()
-  'added verbose researchers to the library...\r\n' %>% 
-    give_echo(log_con, T, progress)
-  
   df_sel <- semi_join(df, df_r, by = c('author', 'year')) %>%
     group_by(key) %>%
     summarize(ascore = (n()+1) %>% as.integer) %>%
     select(key, ascore) 
-  dfWoS <- dfWoS %>%
-    select(-ascore) %>% 
+  d$authors$authorScores<- dfWoS %>%
+    select(key) %>% 
+    left_join(df_verb_WoS, by = 'key') %>%
+    mutate(nrecords = as.integer(ifelse(is.na(nrecords), 1, nrecords)) ) %>% 
     left_join(df_sel, by = 'key') %>%
-    mutate(ascore = ifelse(is.na(ascore), 1, ascore) %>% as.integer) %>%
-    sort_columns_in_wos_dataframe
+    mutate(ascore = ifelse(is.na(ascore), 1, ascore) %>% as.integer) 
   'added top researhers to the library...\r\n' %>% 
     give_echo(log_con, T, progress)
   #side effects: updating verbose and top researchers databases in config file
-  d$authors$verbR<<-semi_join(df, df_verb, by = c('author', 'year')) %>% 
+  d$authors$verbR<-semi_join(df, df_verb, by = c('author', 'year')) %>% 
     select(year, author) %>%
     distinct(year, author) %>%
     mutate(year = str_c('Y', year)) %>%
@@ -418,7 +402,7 @@ addResearchers <- function(dfWoS, log_con=NULL, progress=NULL) {
     spread(year, author)
   msg<-'created verbose researcher`s table...\r\n' %>% 
     give_echo(log_con, T, progress)
-  d$authors$topR<<- semi_join(df, df_r, by = c('author', 'year')) %>% 
+  d$authors$topR<-semi_join(df, df_r, by = c('author', 'year')) %>% 
     mutate(author=str_to_title(author)) %>% 
     select(year, author) %>%
     distinct(year, author) %>%
@@ -429,8 +413,7 @@ addResearchers <- function(dfWoS, log_con=NULL, progress=NULL) {
     spread(year, author)
   msg<-'created top researcher`s table...\r\n' %>% 
     give_echo(log_con, F, progress)
-  
-  dfWoS
+  d
 }
 #' Generate journal URL tag
 #'
@@ -442,41 +425,37 @@ addResearchers <- function(dfWoS, log_con=NULL, progress=NULL) {
 #' @export
 #'
 #' @examples
-#' journal<-"Journal of Development Economics"
+#' title<-"Journal of Development Economics"
+#' publisher3 = "elr"
 #' generate_journal_url_tag(journal)
-generate_journal_url_tag <- function(journal) {
+generate_journal_url_tag <- function(title, publisher3, url, url_tocken) {
   #print(journal)
-  url_tag<-journal
+  url_tag<-title
   url_path<-""
-  j=d$journals %>% 
-    filter(title==journal | mydbtitle==journal) %>% 
-    select(title, publisher3, url, url_tocken)
-  #print(j)
-  if(j$publisher3 == "elr"){
-    jtitle<-j$title
-    jtitle<-str_replace_all(jtitle, pattern = "[[:punct:]]", replacement = "")
-    jname<-str_to_lower(jtitle) %>% str_split(" ") %>% unlist %>% glue_collapse(sep="-")
-    url_path<-file.path(j$url, jname)
+  if(publisher3 == "elr"){
+    title<-str_replace_all(title, pattern = "[[:punct:]]", replacement = "")
+    name<-str_to_lower(title) %>% str_split(" ") %>% unlist %>% glue_collapse(sep="-")
+    url_path<-file.path(url, name)
   }
-  if(j$publisher3 %in% c("wly", "emd", "snr", "tyr")) {
-    url_path<-file.path(j$url, j$url_tocken)
+  if(publisher3 %in% c("wly", "emd", "snr", "tyr")) {
+    url_path<-file.path(url, url_tocken)
   }
-  if(j$publisher3=="oup"){
-    url_path<-file.path(j$url, j$url_tocken, "issue")
+  if(publisher3=="oup"){
+    url_path<-file.path(url, url_tocken, "issue")
   }
-  if(j$publisher3=="aea"){
-    url_path<-file.path(j$url, j$url_tocken, "issues")
+  if(publisher3=="aea"){
+    url_path<-file.path(url, url_tocken, "issues")
   }
   
-  if(j$publisher3=="cup"){
-    jname<-str_to_lower(j$title) %>% str_split(" ") %>% unlist %>% glue_collapse(sep="-")
-    url_path<-file.path(j$url, jname, "all-issues")
+  if(publisher3=="cup"){
+    name<-str_to_lower(title) %>% str_split(" ") %>% unlist %>% glue_collapse(sep="-")
+    url_path<-file.path(url, name, "all-issues")
   }
-  if(j$publisher3 %in% c("now", "ares")){
-    url_path<-j$url
+  if(publisher3 %in% c("now", "ares")){
+    url_path<-url
   }
   if(url_path!=""){
-    url_tag<-a(journal, href=url_path, target="_blank") %>% as.character()
+    url_tag<-a(title, href=url_path, target="_blank") %>% as.character()
   }
   url_tag
 }

@@ -7,6 +7,7 @@
     "home": "/home/rstudio/Documents/Library/wos",
     "papers": "/home/rstudio/Documents/Papers",
     "new_pdf": "/home/rstudio/Documents/Library/wos/new",
+    "bibarchive":"/home/rstudio/Documents/Library/wos/bibarchive",
     "pdf": "/home/rstudio/Documents/Library/wos/pdf",
     "db": "/home/rstudio/Documents/Library/wos/db",
     "topic_models": "/home/rstudio/Documents/Library/wos/topic_models",
@@ -22,21 +23,13 @@
     "pdf_first_page": "img/pdf_first_page.png",
     "rdsbib":"bibliography.rds"
   },
-  "year": {
-    "min": 1987,
-    "max": 2019
-  },
-  "jscore": {
-    "min": "Inf",
-    "max": "-Inf"
-  },
-  "ascore": {
-    "min": 1,
-    "max": 3
-  },
-  "nrecords": {
-    "min": 1,
-    "max": 5
+  "colnames":{
+    "wos_dt":["pdf","authors", "jscore", "ascore", "nrecords", "title7", "year", "jacro", "publisher3", "updated"],
+    "wos_dt_shown": ["pdf","Authors", "Jsc", "Asc", "Nrd", "Title", "Year", "J", "Pub", "Updated"],
+    "top_researchers_dt": ["year", "l_name", "fm_name", "affiliation"],
+    "top_researchers_dt_shown": ["Year", "Last Name", "Family Name", "Affiliation"],
+    "cjcs_main": ["url_title","jacro", "publisher3", "quartile", "top10"],
+    "export_records_summary": ["Journal", "Jacro", "Nrd", "Jsc", "MnAsc"]
   },
   "specs": {
     "publishers": [

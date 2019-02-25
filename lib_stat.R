@@ -1,17 +1,3 @@
-#' Add additional columns to data frame that indicate the presence of full text and abstract
-#'
-#' @param dfWoS 
-#'
-#' @return
-#' @export
-#'
-#' @examples
-#' augment_wos_dataframe(dfWoS)
-augment_wos_dataframe<-function(dfWoS){
-  dfWoS %>% 
-    mutate(IsFullText = ifelse(is.na(file) | file == '', F, T),
-           IsAbstract = ifelse(is.na(abstract) | abstract == '', F, T))
-}
 #' Compute research papers statistics
 #'
 #' @param dfWoS data frame with bibliography records
@@ -24,29 +10,34 @@ augment_wos_dataframe<-function(dfWoS){
 #' @examples
 #' progress<-NULL
 #' dfWoS$number<-NA
-#' compute_research_papers_statistics(dfWoS)
-compute_research_papers_statistics<-function(dfWoS, log_con=NULL, progress=NULL)
+#' compute_research_papers_statistics(d, dfWoS)
+compute_research_papers_statistics<-function(d, dfWoS, log_con=NULL, progress=NULL)
 {
-  dfWoSaug<-augment_wos_dataframe(dfWoS)
   'computing whole library statistics...\r\n' %>% 
     give_echo(log_con, T, progress)
+  dfWoSaug<-dfWoS %>% 
+    mutate(IsFullText = ifelse(is.na(file) | file == '', F, T),
+           IsAbstract = ifelse(is.na(abstract) | abstract == '', F, T)) %>% 
+    left_join(d$citeScores, by="key") %>% 
+    left_join(d$authors$authorScores, by="key")
   start_year<-year(Sys.Date())-3
-  df_whole_library_stat <- articlesDescriptives(dfWoSaug, start_year)
-  df_whole_library_stat <- left_join(df_whole_library_stat, 
-                                     libraryDescriptivesJournals(dfWoSaug, start_year), 
+  df_whole_library_stat <- articlesDescriptives(dfWoSaug, start_year) %>% 
+    left_join(libraryDescriptivesJournals(dfWoSaug, start_year), 
                                      by = 'journal') %>% 
-    filter(!is.na(journal))
-  df_whole_library_stat %<>% mutate_all(funs(replace(., is.na(.), '0/0'))) %>% 
+    filter(!is.na(journal)) %>% 
+  mutate_all(funs(replace(., is.na(.), '0/0'))) %>% 
     mutate(topR=as.numeric(topR),
-           verbR=as.numeric(verbR))
-  df_whole_library_stat %<>%
+           verbR=as.numeric(verbR)) %>% 
     mutate(journal_name=journal) %>% 
-    rowwise() %>% 
-    mutate(journal=generate_journal_url_tag(journal_name))
-  d$libstat$general<<-df_whole_library_stat
-  d$libstat$publishers<<-dfWoS %>% 
+    left_join(d$journals %>% select(title, url, url_tocken), by=c("journal_name"="title")) %>% 
+    mutate(journal=pmap_chr(list(journal, publisher3, url, url_tocken), generate_journal_url_tag)) %>% 
+    select(-url, -url_tocken)
+  d$libstat$general<-df_whole_library_stat
+  d$libstat$publishers<-dfWoSaug %>% 
+    left_join(d$journals %>% select(title, publisher), by=c("journal"="title")) %>% 
+    filter(!is.na(publisher)) %>% 
     group_by(publisher3) %>% 
-    summarise(publishers=glue_collapse(unique(publisher), sep="; "),
+    summarise(publishers=publisher %>% unique %>% glue_collapse(sep = "; ") %>% as.character(),
               njournals=length(unique(journal)),
               avgjscore=round(mean(unique(jscore)), 2),
               nrecords=n(),
@@ -57,13 +48,14 @@ compute_research_papers_statistics<-function(dfWoS, log_con=NULL, progress=NULL)
     give_echo(log_con, F, progress)
   'Creating separate statistics for each journal...\r\n' %>% 
     give_echo(log_con, T, progress)
-  d$libstat$detailed<<-separateJournalsStatistics(dfWoSaug, progress)
+  d$libstat$detailed<-separateJournalsStatistics(dfWoSaug, progress)
   'detailed library statistics was created...\r\n' %>% 
     give_echo(log_con, T, progress)
   'Library statistics created...\r\n' %>% 
     give_echo(log_con, F, progress)
   paste(format(Sys.time(),"%Y-%m-%d %H:%M:%S", tz=g$tz), "log closed\r\n") %>% 
     give_echo(log_con, F, progress)
+  d
 }
 #' Totals for library descriptive statistics
 #'

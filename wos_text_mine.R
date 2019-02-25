@@ -82,7 +82,7 @@ topicAnalysis<-function(df, progress = NULL){
   # })
   model_list <- TmParallelApply(
     X = k_list,
-    cpus=parallel::detectCores()-2,
+    cpus=parallel::detectCores()-6,
     FUN = function(k){
       gc()
       model_name<-paste0(k, "_topics.rda")
@@ -141,9 +141,8 @@ topicAnalysis<-function(df, progress = NULL){
   model$top_terms <- GetTopTerms(phi = model$phi, M = 5)
   
   # phi-prime, P(topic | words) for classifying new documents
-  #model$phi_prime <- CalcPhiPrime(phi = model$phi, theta = model$theta, p_docs = rowSums(dtm))
-  
-  #model$top_terms_prime <- GetTopTerms(phi = model$phi_prime, M = 5)
+  model$phi_prime <- textmineR::CalcPhiPrime(phi = model$phi, theta = model$theta, p_docs = rowSums(dtm))
+  model$top_terms_prime <- textmineR::GetTopTerms(phi = model$phi_prime, M = 5)
   
   # give a hard in/out assignment of topics in documents
   model$assignments <- model$theta

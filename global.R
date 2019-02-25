@@ -24,9 +24,6 @@ progress_job<-0
 #write_json(g, "config.json", pretty=T, simplifyVector = T, auto_unbox=T)
 g<-read_json("config.json", simplifyVector = T)
 
-#write_rds(dfWoS, g$files$rdsWoS)
-dfWoS<-read_rds(g$files$rdsWoS)
-dfWoS<-import_bibtex_and_pdf(dfWoS)
 # dfWoS %>% 
 #   group_by(year) %>% 
 #   summarise(n=n()) %>% 
@@ -37,12 +34,21 @@ if(file.exists(document_path)){
   d<-read_rds(document_path)
 }else{
   d<-create_wosdoc()
+  #write_rds(d, document_path)
 }
-
-d<-update_wosdoc(d, dfWoS)
+#write_rds(dfWoS, g$files$rdsWoS)
+dfWoS<-read_rds(g$files$rdsWoS)
+#dfWoS %>% filter(is.na(key))
+# dfWoS$jscore<-NULL
+# dfWoS$jacro<-NULL
+IsBibs<-F
+if(IsBibs){
+  dfWoS<-import_bibtex_and_pdf(dfWoS)
+  d<-update_wosdoc(d, dfWoS)
+}
 #write_rds(d, document_path)
 
-WoSDT<-getWoSDT()
+WoSDT<-getWoSDT(dfWoS)
 
 lastResearchPaperFolder<-file.path(g$paths$papers, d$select$exportFolder)
 file_path<-file.path(lastResearchPaperFolder,g$files$rdsbib)

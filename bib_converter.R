@@ -58,18 +58,14 @@ GetBibKey <- function(publisher3, author, year, pages) {
 #'@export
 #'
 #' @examples
-#' dfNewBib<-dfLoadedBibs
+#' dfNewBib<-dfLoadedBibs %>% filter(journal=="The Quarterly Journal of Economics")
 #' nrow(dfNewBib)
 #' createBibKeys(dfNewBib) %>% head
 createBibKeys <- function(dfNewBib,  log_con=NULL, progress=NULL) {
   'Creating bib keys...' %>% 
     give_echo(log_con, T, progress)
-  df_right<-d$libstat$jcitescores %>% 
-    mutate(journal=title) %>% 
-    select(journal, jacro, jscore)
-  
-  df <- left_join(dfNewBib, df_right, by = "journal") %>% 
-    mutate(key =pmap_chr(list(publisher3, author, year, pages), GetBibKey)) %>% 
+  df<-dfNewBib %>% 
+    mutate(key=pmap_chr(list(publisher3, author, year, pages), GetBibKey)) %>% 
     distinct(key, .keep_all = T) %>% 
     arrange(journal, desc(year))
   paste('created', nrow(df), 'bib keys...') %>% 

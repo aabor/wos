@@ -9,7 +9,7 @@
 #' @export
 #'
 #' @examples
-#' df<-dfWoSExport
+#' df<-dfWoSExport[2,]
 #' convertDataFrameToBibTexHTML(df)
 convertDataFrameToBibTexHTML<-function(df){
   convertDataFrameToBibTex(df) %>% 
@@ -25,7 +25,7 @@ convertDataFrameToBibTexHTML<-function(df){
 #' @export
 #'
 #' @examples
-#' df<-dfWoS[1:3,]
+#' df<-dfWoS[3,]
 #' res<-convertDataFrameToBibTex(df)
 #' res%>% class
 #' str(res)
@@ -177,6 +177,8 @@ convertDataFrameToRMarkdownHTML<-function(dfWoSExport){
 #' @export
 #'
 #' @examples
+#' progress<-NULL
+#' suggested_terms<-suggested_terms<-get_terms(dfWoSExport)
 convertDataFrameToRMarkdownHTMLWithTextChunks<-function(dfWoSExport, suggested_terms, progress=NULL){
   chunks<-get_text_chunks_from_selected_records(dfWoSExport, suggested_terms, progress)
   if(nrow(chunks)==0)return()

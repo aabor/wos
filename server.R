@@ -174,17 +174,17 @@ shinyServer(function(input,output,clientData, session){
     updateSelectInput(session, "Journal", selected = "All")
     updateSelectInput(session, "Publisher", selected = "All")
     updateSliderInput(session, "sliderNrecords", 
-                      min = g$nrecords$min, max = g$nrecords$max,
-                      value = c(1, g$nrecords$max))
+                      min = d$filters$nrecord$min, max = d$filters$nrecord$max,
+                      value = c(1, d$filters$nrecord$max))
     updateSliderInput(session, "sliderAscore", 
-                      min = g$ascore$min, max = g$ascore$max,
-                      value = c(0, g$ascore$max))
+                      min = d$filters$ascore$min, max = d$filters$ascore$max,
+                      value = c(0, d$filters$ascore$max))
     updateSliderInput(session, "sliderYear", 
-                min = g$year$min, max = g$year$max,
-                value = c(g$year$min,g$year$max))
+                min = d$filters$year$min, max = d$filters$year$max,
+                value = c(d$filters$year$min,d$filters$year$max))
     updateSliderInput(session, "sliderJscore", 
-                min = g$jscore$min, max = g$jscore$max,
-                value = c(g$jscore$min,g$jscore$max))
+                min = d$filters$jscore$min, max = d$filters$jscore$max,
+                value = c(d$filters$jscore$min,d$filters$jscore$max))
     updateCheckboxInput(session, "checkKeyWords", value = F)
     updateCheckboxInput(session, "checkAbstract", value = F)
     updateCheckboxInput(session, "checkFullText", value = F)
@@ -221,9 +221,10 @@ shinyServer(function(input,output,clientData, session){
     
     if(input$Journal!="All"){
       dt<-dt %>% subset(journal==input$Journal)
+      #dt<-dt %>% subset(journal==)
     }
     if(input$Publisher!="All"){
-      dt<-dt %>% subset(publisher==input$Publisher)
+      dt<-dt %>% subset(publisher3==input$Publisher)
       cat(paste("Searching for"), nrow(df), "\r\n")
     }
     cat("Filtering by words")
@@ -304,8 +305,8 @@ shinyServer(function(input,output,clientData, session){
   # main data base
   output$tableBibs = DT::renderDataTable({
     #rv$WoSDT<-getWoSDT(dfWoS)
-    datatable(rv$WoSDT[,wos_dt_col_names], rownames = F, 
-              colnames = wos_dt_shown_col_names,
+    datatable(rv$WoSDT[,g$colnames$wos_dt], rownames = F, 
+              colnames = g$colnames$wos_dt_shown,
               escape = F,
               options = list(
                 lengthMenu = list(c(7, 15, 50), c('5', '15', "50")),
@@ -411,8 +412,8 @@ shinyServer(function(input,output,clientData, session){
   })
   # table with records to export
   output$tableBibsExport = DT::renderDataTable({
-    datatable(rv$WoSExportDT[, wos_dt_col_names], rownames = F, 
-              colnames = wos_dt_shown_col_names,
+    datatable(rv$WoSExportDT[, g$colnames$wos_dt], rownames = F, 
+              colnames = g$colnames$wos_dt_shown,
               escape = F,
               options = list(
                 lengthMenu = list(c(7, 15, 50), c('7', '15', "50")),
@@ -423,16 +424,8 @@ shinyServer(function(input,output,clientData, session){
   # summary table for records to export
   output$tableBibsExportSummary = DT::renderDataTable({
     #dfWoSExport
-    datatable(rv$WoSExportDT %>%   
-                mutate(journal=pmap_chr(list(journal), generate_journal_url_tag)) %>% 
-                select(journal, jacro, jscore, ascore) %>% 
-                group_by(journal, jacro, jscore) %>% 
-                summarise(nrecords=n(),
-                          mnascore=mean(ascore)) %>% 
-                select(journal, jacro, nrecords, jscore, mnascore) %>% 
-                arrange(desc(nrecords))
-                  , rownames = F, 
-              colnames = c("Journal", "Jacro", "Nrd", "Jsc", "MnAsc"),
+    datatable(rv$WoSExportDT %>% get_export_records_summary, rownames = F, 
+              colnames = g$colnames$export_records_summary,
               escape = F,
               options = list(
                 lengthMenu = list(c(3, 5, 15), c('3', '5', "15")),
@@ -442,8 +435,8 @@ shinyServer(function(input,output,clientData, session){
   })
   #table with top researchers from Clarivate Analytics database
   output$tableResearchers = DT::renderDataTable({
-    datatable(rv$ResearchersDT[, top_researchers_dt_col_names], rownames = F,
-              colnames = top_researchers_dt_shown_col_names,
+    datatable(rv$ResearchersDT[, g$colnames$top_researchers_dt], rownames = F,
+              colnames = g$colnames$top_researchers_dt_shown,
               escape = F,
               options = list(
                 lengthMenu = list(c(7, 15, 50), c('7', '15', "50")),
@@ -475,8 +468,8 @@ shinyServer(function(input,output,clientData, session){
   })
   #table with journal SSCI powered by Scopus
   output$tableJournals = DT::renderDataTable({
-    datatable(rv$JournalsDT[, ssci_dt_col_names], rownames = F,
-              colnames = ssci_dt_shown_col_names,
+    datatable(rv$JournalsDT[, d$colnames$ssci_dt], rownames = F,
+              colnames = d$colnames$ssci_dt_shown,
               escape = F,
               options = list(
                 lengthMenu = list(c(7, 15, 60), c('5', '15', "60")),
@@ -525,15 +518,14 @@ shinyServer(function(input,output,clientData, session){
     progress$set(message = "Importing research papers", value = 0)
     cat("Start importing research papers on server side\n")
     nrow_old<-nrow(dfWoS)
-    l<-import_bibtex_and_pdf(dfWoS, progress, input$deleteSourcePDFs)
+    dfWoS<<-import_bibtex_and_pdf(dfWoS, progress, input$deleteSourcePDFs)
+    d<<-update_wosdoc(d, dfWoS)
     msg<-"import folder is empty"
-    if(!is.null(l)){
-      rv$WholeLibraryStatDT<-d$libstat$general
-      rv$DetailedLibraryStatDT<-d$libstat$detailed
-      rv$PublisherStatDT<-d$libstat$publishers
-      rv$WoSDT<-getWoSDT(dfWoS)
-      msg<-paste(l$report_msg, "Total steps", progress_nstep)
-    }
+    rv$WholeLibraryStatDT<-d$libstat$general
+    rv$DetailedLibraryStatDT<-d$libstat$detailed
+    rv$PublisherStatDT<-d$libstat$publishers
+    rv$WoSDT<-getWoSDT(dfWoS)
+    msg<-paste("Import finished", "Total steps", progress_nstep)
     showModal(modalDialog(
       title = "Note",
       msg,
@@ -542,30 +534,6 @@ shinyServer(function(input,output,clientData, session){
         modalButton("OK"))
     ))
   })    
-  observeEvent(input$computeStatistics, {
-    # Create a Progress object
-    progress_nstep<<-0
-    progress_job<<-16
-    progress <- shiny::Progress$new()
-    on.exit(progress$close())
-    # main task
-    progress$set(message = "Computing research papers statistics", value = 0)
-    log_path <- file.path(g$paths$db,'reindex_dataframe.txt')
-    if(file.exists(log_path))file.remove(log_path)
-    log_con <- file(log_path, open = "a")
-    paste(format(Sys.time(),"%Y-%m-%d %H:%M:%S", tz=g$tz), "log started\r\n") %>%   
-      give_echo(log_con, T, progress)
-    compute_research_papers_statistics(dfWoS, log_con, progress)
-    msg<-paste("Research papers statistics computed...", "Total steps", progress_nstep)
-    close(log_con)
-    showModal(modalDialog(
-      title = "Note",
-      msg,
-      easyClose=T,
-      footer = tagList(
-        modalButton("OK"))
-    ))
-  })
   observeEvent(input$getBibEntryWithDOI, {
     # Create a Progress object
     progress_nstep<<-0

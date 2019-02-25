@@ -49,9 +49,14 @@ import_bibtex_and_pdf<-function(dfWoS, progress=NULL, deleteSourcePDFs=F){
   paste(length(bibs), "bibliography items loaded\r\n") %>% 
     give_echo(log_con, F, progress)
   
+  files_to<-file.path(g$paths$bibarchive, basename(files))
   if(deleteSourcePDFs){
-    rem_res<-sum(file.remove(files))
-    paste(rem_res, "bibliography files removed from disk\r\n") %>% 
+    res<-sum(file.rename(files, files_to))
+    res %c% " bibliography files moved to bib archive\r\n" %>% 
+      give_echo(log_con, F, progress)
+  }else{
+    res<-sum(file.copy(files, files_to, overwrite = T))
+    res %c% " bibliography files copied to bib archive\r\n" %>% 
       give_echo(log_con, F, progress)
   }
   paste('converting', length(bibs), '.bibtex records to data.frame...') %>% 
@@ -59,7 +64,7 @@ import_bibtex_and_pdf<-function(dfWoS, progress=NULL, deleteSourcePDFs=F){
   
   non_digit <- "[^\\d]"
   jpublisher<-d$journals %>% 
-    mutate(journal=title) %>% 
+    mutate(journal=mydbtitle) %>% 
     select(journal, publisher3)
   dfLoadedBibs<-map_df(bibs, bib_to_df, log_con, progress) %>% 
     mutate(year=str_replace_all(year, pattern=non_digit, '')) %>% 
@@ -90,21 +95,21 @@ import_bibtex_and_pdf<-function(dfWoS, progress=NULL, deleteSourcePDFs=F){
            number=as.numeric(number),
            updated=Sys.time()) %>% 
     arrange(journal, desc(year), desc(volume)) %>% 
-    select(key, jscore, doi, publisher3, jacro, journal, author, year, volume, number, month, pages, 
+    select(key, doi, publisher3, journal, author, year, volume, number, month, pages, 
          title, keywords, abstract, file, updated)
   
-  paste("converted successfully", nrow(dfLoadedBibs), "bibliography records\r\n") %>% 
+  "converted successfully " %c% nrow(dfLoadedBibs) %c% " bibliography records\r\n" %>% 
     give_echo(log_con, F, progress)
   nbefore<-nrow(dfWoS)
   records_to_update<-intersect(dfLoadedBibs$key, dfWoS$key)
   nrecords_to_update<-length(records_to_update)
-  
   dfWoS<-dfWoS %>% 
-      filter(!(key %in% records_to_update)) %>% 
-      bind_rows(dfLoadedBibs) %>% 
-      distinct(key, .keep_all = T) %>% 
-      filter(!is.na(journal)) %>% 
-      mutate(doi=str_to_lower(doi))
+    filter(!(key %in% records_to_update)) %>% 
+    filter(!is.na(key)) %>% 
+    bind_rows(dfLoadedBibs) %>% 
+    distinct(key, .keep_all = T) %>% 
+    filter(!is.na(journal)) %>% 
+    mutate(doi=str_to_lower(doi))
   nafter<-nrow(dfWoS)
   paste(nbefore - nafter, "records with duplicate keys have been deleted", nrecords_to_update, "will be updated\r\n") %>% 
     give_echo(log_con, F, progress)
@@ -132,9 +137,7 @@ import_bibtex_and_pdf<-function(dfWoS, progress=NULL, deleteSourcePDFs=F){
     right_join(df_filename_doi, by="doi") %>% 
     mutate(file_from=ifelse(is.na(file), NA, file.path(g$paths$new_pdf, basename(file))),
            file_to=ifelse(is.na(file), NA,file.path(g$paths$pdf, paste(key,".pdf", sep="")))) %>% 
-    mutate(file=ifelse(is.na(file), NA,paste(key,".pdf", sep=""))) %>% 
-    filter(!is.na(key))
-  res<-0
+    mutate(file=ifelse(is.na(file), NA,paste(key,".pdf", sep="")))
   if(nrow(dfNewPDFs)>0){
       if(deleteSourcePDFs){
         "deleting source pdf files...\r\n" %>% 
@@ -164,7 +167,7 @@ import_bibtex_and_pdf<-function(dfWoS, progress=NULL, deleteSourcePDFs=F){
   titles_to_delete<-c("Editorial","Guest Editorial", 
                       "Special Issue Editors Introduction",
                       "Editors Note","Comment","Preface")
-  dfWoS %<>% 
+  dfWoS<-dfWoS %>% 
     filter(!(title %in% titles_to_delete)) %>% 
     distinct(key, .keep_all = T) %>% 
     check_pdf_file_references(log_con, progress)
@@ -175,6 +178,8 @@ import_bibtex_and_pdf<-function(dfWoS, progress=NULL, deleteSourcePDFs=F){
   give_echo(report_msg, log_con, F, progress)
   "saving data.frame in .bibtex format\r\n" %>% 
     give_echo(log_con, T, progress)
+  dfWoS %>% filter(is.na(key))
+  
   saveDataFrameToBibTeX(dfWoS, g$files$bibWoS)
   "saving data.frame in .rds format\r\n" %>% 
     give_echo(log_con, F, progress)
