@@ -23,6 +23,7 @@ shinyServer(function(input,output,clientData, session){
   }
   observe({
     d$select$fileFormat<<-input$exportFileFormats
+    d$filters$year$frontierYear<<-input$frontierYear
   })
   observeEvent(input$exportFolders,{
     reloadBibs()
@@ -645,7 +646,7 @@ shinyServer(function(input,output,clientData, session){
     on.exit(progress$close())
     # main task
     
-    topicAnalysis(rv$WoSDT, progress)
+    topicAnalysis(rv$WoSDT, d$filters$year$frontierYear, progress)
     
     progress_nstep<<-progress_nstep + 1
     msg<-'topic analysis finished...'
@@ -665,10 +666,13 @@ shinyServer(function(input,output,clientData, session){
     rv$top_topic_model=d$top_topic_model
     rv$coherence_mat=d$top_topic_model$coherence
   })
+  #d$top_topic_model$topModel$summary
   #table top topic model summary
   output$tableTopicModelSummary = DT::renderDataTable({
+    print(rv$top_topic_model$topModel$summary)
     datatable(rv$top_topic_model$topModel$summary, rownames = F,
-              colnames = c("Topic", "Cluster", "Coherence,%", "Documents", "Top Terms", "Top Terms Prime"),
+              colnames = c("Topic", "Cluster", "Coherence,%", "Documents", "Top Terms"),
+#              colnames = c("Topic", "Cluster", "Coherence,%", "Documents", "Top Terms", "Top Terms Prime"),
               escape = F,
               options = list(
                 lengthMenu = list(c(7, 15, 30), c('5', '15', "30")),

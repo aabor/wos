@@ -10,6 +10,7 @@ create_wosdoc<-function(){
   d$paths<-list()
   d$filters<-list()
   d$filters$year<-list()
+  d$filters$year$frontierYear<-2016
   d$filters$jscore<-list()
   d$filters$ascore<-list()
   d$filters$nrecord<-list()

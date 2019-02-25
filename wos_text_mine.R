@@ -13,16 +13,19 @@
 #' @export
 #'
 #' @examples
+#' frontier_year=2017
 #' df<-dfWoS
 #' progress=NULL
 #' topicAnalysis(df)
-topicAnalysis<-function(df, progress = NULL){
+topicAnalysis<-function(df, frontier_year=2016, progress = NULL){
   # Create a document term matrix
   msg<-"creating document term matrix"
   if (!is.null(progress)) {
     updateProgress(progress, detail = msg)
   }
-  df<-dfWoS %>% 
+  df<-df %>% 
+    filter(!is.na(year)) %>% 
+    filter(year>frontier_year) %>% 
     select(title, key)
   dtm <- CreateDtm(df$title, 
                    doc_names = 1:nrow(df), 
@@ -82,7 +85,7 @@ topicAnalysis<-function(df, progress = NULL){
   # })
   model_list <- TmParallelApply(
     X = k_list,
-    cpus=parallel::detectCores()-6,
+    cpus=parallel::detectCores()-2,
     FUN = function(k){
       gc()
       model_name<-paste0(k, "_topics.rda")
@@ -141,8 +144,8 @@ topicAnalysis<-function(df, progress = NULL){
   model$top_terms <- GetTopTerms(phi = model$phi, M = 5)
   
   # phi-prime, P(topic | words) for classifying new documents
-  model$phi_prime <- textmineR::CalcPhiPrime(phi = model$phi, theta = model$theta, p_docs = rowSums(dtm))
-  model$top_terms_prime <- textmineR::GetTopTerms(phi = model$phi_prime, M = 5)
+  # model$phi_prime <- textmineR::CalcPhiPrime(phi = model$phi, theta = model$theta, p_docs = rowSums(dtm))
+  # model$top_terms_prime <- textmineR::GetTopTerms(phi = model$phi_prime, M = 5)
   
   # give a hard in/out assignment of topics in documents
   model$assignments <- model$theta
@@ -228,9 +231,9 @@ topicAnalysis<-function(df, progress = NULL){
 #    select(topic, cluster, coherence, num_docs, top_terms, top_terms_prime) %>% 
     arrange(model$hclust$clustering) %>% 
     mutate(coherence = round(coherence*100, digits = 2),
-           top_terms=str_replace_all(top_terms, ", ", "; "),
-           top_terms_prime=str_replace_all(top_terms_prime, ", ", "; "),
-           top_terms_prime=str_replace_all(top_terms_prime, "_", " "))
+           top_terms=str_replace_all(top_terms, ", ", "; "))#,
+           #top_terms_prime=str_replace_all(top_terms_prime, ", ", "; "),
+           #top_terms_prime=str_replace_all(top_terms_prime, "_", " "))
   #model$summary %>% head
   
   #View(model$summary)
