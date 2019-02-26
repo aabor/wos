@@ -131,35 +131,44 @@ correctAuthorName <- function(df, progress=NULL) {
 #' @export
 #'
 #' @examples
-#' bib<-bibs[1]
+#' (bib<-bibs[26])
+#' bib_to_df(bib, NULL)
 bib_to_df <- function(bib, progress=NULL) {
   tryCatch({
-    pattern<-",[ ]*([\\w]+)[ ]*="
-    fields <- str_match_all(bib, pattern)[[1]][, 2]
-    (fields <- tolower(fields))
-    field_values <- str_replace_all(bib, pattern = pattern, '\t') %>%
-      str_split('\t')
-    (field_values <- field_values[[1]])
-    field_values <- field_values[-1]
-    pattern <- '[{}()"\']+'
-    field_values <- str_replace_all(field_values, pattern = pattern, '')
-    length(field_values) == length(fields)
-    df <- bind_cols(fn = fields, fv = field_values)
-    (filter <- which(df$fn == 'keywords'))
-    df_keywords<- df[filter, 'fv']
-    keywords <- pull(df_keywords, fv)
-    (keywords<-paste(keywords, collapse = ' and '))
-    tbl_keywords <- tibble(fn = 'keywords', fv = keywords)
-    df <- bind_rows(filter(df, fn != 'keywords'), tbl_keywords)
-    (fns <- pull(df, fn))
-    df$fn<-NULL
-    df <- as_tibble(t(df))
-    names(df)<-fns
-    df <- allVariablesToCharacters(df)
-    (cols<-names(df))
-    if (!('author' %in% cols)) {
-      #print('deleting item without author...')
-      #print(df)
+    bib_type<-""
+    pattern<-",\\s*[\\w]+\\s*=\\s*\\{[[:alnum:][:punct:]-]+\\}"
+    #str_view_all(bib, pattern)
+    fields<-""
+    fields_values<-""
+    if(str_count(bib, pattern)>3){
+      bib_type<-"curly_braces"
+      pattern_fields<-',\\s*([\\w]+)\\s*=\\s*\\"?\\{'
+      #str_view_all(bib, pattern_fields)
+      pattern_values <- "\\{(?:[^{}]*|(?R))*\\}" # matching balanced curly brackets
+      fields <- str_match_all(bib, pattern_fields)[[1]][, 2]
+      fields <- tolower(fields)
+      fields_values<-regmatches(bib, gregexpr(pattern=pattern_values, bib, perl = TRUE)) %>% 
+        unlist %>% 
+        str_remove_all(pattern="[{}]")
+    }
+    pattern<-',[ \\w]+\\s*=\\s*\\"[[:alnum:][:punct:]-]+\\"'
+    if(str_count(bib, pattern)>3){
+      bib_type<-"double_quotes"
+      pattern_fields<-',\\s*([\\w]+)\\s*=\\s*\\"'
+      pattern_values <- '\\"(?:[^"]*|(?R))*\\"' # matching balanced curly brackets
+      fields <- str_match_all(bib, pattern_fields)[[1]][, 2]
+      fields <- tolower(fields)
+      fields_values<-regmatches(bib, gregexpr(pattern=pattern_values, bib, perl = TRUE)) %>% 
+        unlist %>% 
+        str_remove_all(pattern='["]')
+    }
+    names(fields_values) <-fields
+    df<-bind_rows(fields_values)
+    df %<>% 
+      mutate(keywords=str_replace_all(keywords, ", ", " and "))
+    if (!('author' %in% names(df))) {
+      "No author in " %c% bib %>% 
+      echo("bib_to_df", F, progress, level = "error")
       return(NA)
     }
   }, error = function(e) {

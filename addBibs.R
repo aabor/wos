@@ -123,7 +123,7 @@ import_bibtex_and_pdf<-function(dfWoS, progress=NULL, deleteSourcePDFs=F){
     echo("import_bibtex_and_pdf", F, progress)
   
   files <- dir(g$paths$new_pdf, pattern = "\\.pdf$", full.names = TRUE, recursive = TRUE)
-  paste(length(files), "files will be processed\r\n") %>% 
+  paste(length(files), ".pdf files found for proccessing") %>% 
     echo("import_bibtex_and_pdf", F, progress)
   df_filename_doi<-get_filename_doi(files, progress)
   "adding full text file paths to loaded bibliography records\r\n" %>% 
@@ -202,14 +202,13 @@ import_bibtex_and_pdf<-function(dfWoS, progress=NULL, deleteSourcePDFs=F){
 get_filename_doi<-function(files, progress=NULL){
   nfiles<-length(files)
   if(nfiles==0)return({
-    data.frame(file="",doi="", stringsAsFactors = F)[0,]
+    tibble(file=character(),doi=character())
     })
-  df<-data.frame(file=files, 
+  df<-tibble(file=files, 
                  doi=map(files,extract_doi_from_metadata, progress) %>% 
-                   unlist, 
-                 stringsAsFactors = F) %>% 
+                   unlist) %>% 
     subset(!is.na(doi))  
-  paste("in", nrow(df), "PDF files the doi was found in metadata\r\n") %>% 
+  "found doi in " %c% nrow(df) %c% "PDF files from total " %c% nfiles %c% "files" %>% 
     echo("get_filename_doi", F, progress)
   notfound<-setdiff(files, df$file)
   if(length(notfound)>0){
@@ -310,7 +309,7 @@ load_bib_entries_for_downloaded_pdfs<-function(progress){
 #' basename(files)
 #' (pdf_file_name<-files[78])
 extract_doi_from_metadata<-function(pdf_file_name, progress=NULL){
-  paste("extracting doi from pdf file:", basename(pdf_file_name), "...") %>% 
+  "looking: " %c% basename(pdf_file_name) %>% 
     echo("extract_doi_from_metadata", T, progress)
   doi<-NULL
   info<-NULL
@@ -334,7 +333,7 @@ extract_doi_from_metadata<-function(pdf_file_name, progress=NULL){
         if(doi==""){
           doi<-NULL
         }else{
-          paste(doi, "in key\r\n") %>% 
+          doi %c% " in key" %>% 
             echo("extract_doi_from_metadata", F, progress)
           return(doi)
         }
@@ -350,7 +349,7 @@ extract_doi_from_metadata<-function(pdf_file_name, progress=NULL){
       dois<-html_nodes(html, "doi") %>% html_text()
       if(length(dois)>0){
         doi<-dois[1]
-        paste(doi, "in meta data tags\r\n") %>% 
+        doi %c% " in meta data tags" %>% 
           echo("extract_doi_from_metadata", F, progress)
         return(doi)
       }
@@ -375,25 +374,30 @@ extract_doi_from_metadata<-function(pdf_file_name, progress=NULL){
     echo("extract_doi_from_metadata", F, progress)
   doi<-first_page %>%
     get_doi_from_first_page
-  if(is.na(doi)){
+  if(!is.na(doi)){
+    doi %<>%  str_replace("doi ", "") %>% 
+      str_trim()
+    doi %c% " in the first page text" %>% 
+      echo("extract_doi_from_metadata", F, progress)
+    return(doi)
+  }else{
     paste("searching doi on the first page image...") %>% 
       echo("extract_doi_from_metadata", F, progress)
     pdf_render_page(pdf_file_name, page=1, dpi=600) %>% 
       png::writePNG(g$files$pdf_first_page)
     doi<-ocr(g$files$pdf_first_page) %>% 
       get_doi_from_first_page
+    if(!is.na(doi)){
+      doi %<>%  str_replace("doi ", "") %>% 
+        str_trim()
+      paste(doi, " in the optically recognized first page text") %>% 
+        echo("extract_doi_from_metadata", F, progress)
+      return(doi)
+    }
   }
-  if(!is.na(doi)){
-    doi %<>%  str_replace("doi ", "") %>% 
-      str_trim()
-    doi %>% 
-      echo("extract_doi_from_metadata", F, progress)
-    return(doi)
-  }else{
-    "doi not found" %>% 
+  "doi not found" %>% 
       echo("extract_doi_from_metadata", F, progress)
     return(NA)
-  }
 }
 #' Extract doi from plain text
 #' 
