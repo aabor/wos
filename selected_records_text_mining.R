@@ -61,8 +61,8 @@ get_terms_df<-function(x){
 #' get_text_chunks_from_record(key, file, author, title, keywords)
 get_text_chunks_from_record<-function(key, file, author, title, keywords){
   pdf_file<-file.path(g$paths$pdf, basename(file))
-  "searching terms in full text: " %c% basename(file) %c% "\r\n"%>% 
-    give_echo(NULL, T, NULL)
+  "searching terms in full text: " %c% basename(file) %>% 
+    echo("get_text_chunks_from_record", F, NULL)
   text_chunks<-NULL
   print(pdf_file)
   main_text<-pdf_text(pdf_file)
@@ -138,16 +138,16 @@ get_text_chunks_from_record<-function(key, file, author, title, keywords){
 get_text_chunks_from_selected_records<-function(dfWoSExport, suggested_terms, progress=NULL){
   suggested_terms_vector<-words(suggested_terms)
   "Proccessing terms" %c% glue_collapse(suggested_terms_vector, sep = "; ") %>% 
-    give_echo(NULL, T, progress)
+    echo("get_text_chunks_from_selected_records", T, progress)
   dfProccessing<-dfWoSExport %>% 
     mutate(pdf_file=file.path(g$paths$pdf, basename(file))) %>% 
     subset(!is.na(file)) %>% 
     subset(file.exists(pdf_file)) %>% 
     select(key, file, author, title, keywords)
   #dfProccessing<-dfProccessing %>% tail
-  if(nrow(df)==0){
+  if(nrow(dfProccessing)==0){
     "Warning no .pdfs for selected bibliography records, imposible to get text chunks" %>% 
-      give_echo(NULL, T, progress)
+      echo("get_text_chunks_from_selected_records", F, progress, level = "warn")
   }
   dfProccessing %>%
     mutate(data=pmap(list(key, file, author, title, keywords),

@@ -15,6 +15,7 @@
     "jscore": "/home/rstudio/Documents/Library/wos/db/jscore.txt"
   },
   "files": {
+    "log_file": ["/home/rstudio/Documents/Library/wos/wos.log"],
     "bibWoS": "/home/rstudio/Documents/Library/wos/db/WoS.bib",
     "csvWoS": "/home/rstudio/Documents/Library/wos/db/WoS.csv",
     "rdsWoS": "/home/rstudio/Documents/Library/wos/db/WoS.rds",

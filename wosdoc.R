@@ -27,6 +27,7 @@ create_wosdoc<-function(){
   d$journals<-myjournals
   d$libstat$jcitescores<-createCiteScoreDF(myjournals, g$paths$jscore)
   d$authors$df<-createResearcherDF()
+  echo("New document created", "create_wosdoc")
   d
 }
 #' Update wos document
@@ -73,7 +74,7 @@ update_wosdoc<-function(d, dfWoS){
   
   #library statistics
   d<-compute_research_papers_statistics(d, dfWoS)
-  
+  echo("Document updated", "update_wosdoc")
   d
 }
 #' Create cite scores data frame
@@ -84,7 +85,6 @@ update_wosdoc<-function(d, dfWoS){
 #'
 #' @param xlsxSelectedJournals string path to Excel book with manually selected journals
 #' @param jscore_path string path to folder with cite score metrics in .txt format for each year
-#' @param log_con log file connection
 #' @param progress shiny progress bar object
 #'
 #' @return data.frame with structure  "title"      "publisher"  "quartile"
@@ -94,9 +94,8 @@ update_wosdoc<-function(d, dfWoS){
 #'
 #' @examples
 #' progress<-NULL
-#' log_con<-NULL
 #' sc<-createCiteScoreDF(g$paths$jscore_path) %>% head
-createCiteScoreDF <- function(myjournals, jscore_path, log_con=NULL, progress=NULL) {
+createCiteScoreDF <- function(myjournals, jscore_path, progress=NULL) {
   files<-dir(g$paths$jscore, pattern = "\\.txt$", full.names = T, recursive = F)
   if(length(files)==0)return(NULL)
   files<-sort(files, decreasing = T)
@@ -109,8 +108,7 @@ createCiteScoreDF <- function(myjournals, jscore_path, log_con=NULL, progress=NU
     paste('sc', ., sep = '') 
   arrange_quo = parse_quosure(col_metrics[1]) # refernce column by its string name "col_name"
   last_col_quo = parse_quosure(col_metrics[length(col_metrics)]) # refernce column by its string name "col_name"
-  'CiteScores metrics found. Extracting metrics...\r\n' %>% 
-    give_echo(log_con, F, progress)
+  echo('CiteScores metrics found. Extracting metrics...\r\n', "createCiteScoreDF", F, progress)
   AllCiteScores<-map(files,function(file) {
     file_name<-basename(file)
     year<-str_sub(file_name, 0,4) %>% as.integer()
@@ -128,14 +126,14 @@ createCiteScoreDF <- function(myjournals, jscore_path, log_con=NULL, progress=NU
       names(df)<-c("title", "citescore", "quartile", "top10", "year")
     }
     paste(nrow(df), "journals parsed\r\n") %>% 
-      give_echo(log_con, F, progress)
+      echo("createCiteScoreDF", F, progress)
     paste("file", file_name, "loaded...", "parsed", nrow(df), "journals\r\n") %>% 
-      give_echo(log_con, T, progress)
+      echo("createCiteScoreDF", T, progress)
     df
   }) %>% 
     reduce(bind_rows)
   'cite score statistics loaded...\r\n' %>% 
-    give_echo(log_con, T, progress)
+    echo("createCiteScoreDF", T, progress)
   
   dfMyJournalsFull<-left_join(myjournals, AllCiteScores, by = 'title') %>% 
     mutate(title=mydbtitle) %>% 
@@ -171,7 +169,7 @@ createCiteScoreDF <- function(myjournals, jscore_path, log_con=NULL, progress=NU
     mutate(url_title=pmap_chr(list(title, publisher3, url, url_tocken), generate_journal_url_tag))
 
   'cite score database created...' %>% 
-    give_echo(log_con, T, progress)
+    echo("createCiteScoreDF", T, progress)
   df
 }
 #' Load cite score statistics in format of 2017 year
@@ -242,23 +240,18 @@ createResearcherDF <- function(progress=NULL) {
                key=str_replace_all(key, " ", "_")) %>% 
         select(key, year, l_name, fm_name, fm_abb, affiliation)%>% 
         distinct(key, .keep_all = T)
-      msg<-paste(nrow(economic_authors), 'distinct authors found in year', year)
-      print(msg)
-      if (!is.null(progress)) {
-        updateProgress(progress, detail = msg)
-      }
+      paste(nrow(economic_authors), 'distinct authors found in year', year) %>% 
+        echo("createResearcherDF")
       economic_authors
     }, error = function(e) {
-      cat(paste('File ', f, 'caused a mistake:', e, '\r\n'))
+      paste('File ', f, 'caused a mistake:', e, '\r\n') %>% 
+        echo("createResearcherDF", F, NULL, level = "error")
     })
   }) %>% 
     bind_rows %>% 
     arrange(desc(year), l_name) 
-  progress_nstep<<-progress_nstep + 1
-  msg<-paste(nrow(df), 'total number of authors for all years, distinct authors', length(df$key %>% unique()))
-  if (!is.null(progress)) {
-    updateProgress(progress, detail = msg)
-  }
+  paste(nrow(df), 'total number of authors for all years, distinct authors', length(df$key %>% unique())) %>% 
+    echo("createResearcherDF", F, progress)
   setwd(old_path)
   df
 }
@@ -309,9 +302,8 @@ getWoSDT <- function(dfWoS) {
 #' dfLoadedBibs$journal
 #' d$libstat$jcitescores<-createCiteScoreDF(jscore_path, NULL, progress)
 #' df<-dfWoS
-getCiteScoresDF<-function(dfWoS,  log_con=NULL, progress=NULL){
-  "Adding cite scores..." %>% 
-    give_echo(log_con, T, progress)
+getCiteScoresDF<-function(dfWoS,  progress=NULL){
+  echo("Adding cite scores...","getCiteScoresDF", T, progress)
   dfCiteScores<-d$libstat$jcitescores %>% 
     mutate(journal=title) %>%
     select(journal, jacro, jscore, quartile, top10)
@@ -336,15 +328,13 @@ getCiteScoresDF<-function(dfWoS,  log_con=NULL, progress=NULL){
 #' res %>% subset(ascore>2)
 #' res %>% subset(nrecords>2) %>% subset(ascore>2) 
 #' res %>% filter(is.na(ascore))
-#' log_con<-NULL
 #' progress<-NULL
-addResearcherScoresDF <- function(d, dfWoS, log_con=NULL, progress=NULL) {
+addResearcherScoresDF <- function(d, dfWoS, progress=NULL) {
   dfResearchers<-d$authors$df
   (years <- unique(dfResearchers$year))
   frontier_year <- min(setdiff(years, min(years)))
   frontier_year<-as.integer(frontier_year)
-  'extracting key-year-author from main data.frame...\r\n' %>% 
-    give_echo(log_con, T, progress)
+  echo('extracting key-year-author from main data.frame...', "addResearcherScoresDF", T, progress)
   df <- dfWoS %>%
     select(key, author, year) %>% 
     mutate(year = ifelse(year < frontier_year, frontier_year - 1, year) %>% as.character) %>%
@@ -358,16 +348,14 @@ addResearcherScoresDF <- function(d, dfWoS, log_con=NULL, progress=NULL) {
            %>% unlist) %>%
     unite(author, lname, fm_abb, sep = ' ') %>%
     select(key, year, author)
-  'extracted key-year-author from main data.frame...\r\n' %>% 
-    give_echo(log_con, T, progress)
+  echo('extracted key-year-author from main data.frame...', "addResearcherScoresDF", T, progress)
   df_r <- dfResearchers %>%
     mutate(year = ifelse(year<frontier_year, frontier_year - 1, year) %>% as.character) %>%
     mutate(fm_abb = str_replace(fm_abb, pattern = '-', ' ')) %>%
     unite(author, l_name, fm_abb, sep = ' ') %>%
     mutate(author = str_to_title(author)) %>%
     select(year, author)
-  'created top researchers data.frame...\r\n' %>% 
-    give_echo(log_con, T, progress)
+  echo('created top researchers data.frame...', "addResearcherScoresDF", T, progress)
   df_verb <- df %>%
     group_by(author, year) %>%
     summarize(verb = n()) %>%
@@ -378,8 +366,8 @@ addResearcherScoresDF <- function(d, dfWoS, log_con=NULL, progress=NULL) {
     summarize(nrecords = n()) %>%
     select(key, nrecords) %>%
     mutate(nrecords=as.integer(nrecords))
-  'created verbose researchers data.frame...\r\n' %>% 
-    give_echo(log_con, T, progress)
+  'created verbose researchers data.frame...' %>% 
+    echo("addResearcherScoresDF", T, progress)
   df_sel <- semi_join(df, df_r, by = c('author', 'year')) %>%
     group_by(key) %>%
     summarize(ascore = (n()+1) %>% as.integer) %>%
@@ -390,8 +378,8 @@ addResearcherScoresDF <- function(d, dfWoS, log_con=NULL, progress=NULL) {
     mutate(nrecords = as.integer(ifelse(is.na(nrecords), 1, nrecords)) ) %>% 
     left_join(df_sel, by = 'key') %>%
     mutate(ascore = ifelse(is.na(ascore), 1, ascore) %>% as.integer) 
-  'added top researhers to the library...\r\n' %>% 
-    give_echo(log_con, T, progress)
+  'added top researhers to the library...' %>% 
+    echo("addResearcherScoresDF", T, progress)
   #side effects: updating verbose and top researchers databases in config file
   d$authors$verbR<-semi_join(df, df_verb, by = c('author', 'year')) %>% 
     select(year, author) %>%
@@ -401,8 +389,8 @@ addResearcherScoresDF <- function(d, dfWoS, log_con=NULL, progress=NULL) {
     mutate(idx = 1:n()) %>%
     ungroup() %>%
     spread(year, author)
-  msg<-'created verbose researcher`s table...\r\n' %>% 
-    give_echo(log_con, T, progress)
+  msg<-'created verbose researcher`s table...' %>% 
+    echo("addResearcherScoresDF", T, progress)
   d$authors$topR<-semi_join(df, df_r, by = c('author', 'year')) %>% 
     mutate(author=str_to_title(author)) %>% 
     select(year, author) %>%
@@ -412,8 +400,8 @@ addResearcherScoresDF <- function(d, dfWoS, log_con=NULL, progress=NULL) {
     mutate(idx = 1:n()) %>%
     ungroup() %>%
     spread(year, author)
-  msg<-'created top researcher`s table...\r\n' %>% 
-    give_echo(log_con, F, progress)
+  msg<-'created top researcher`s table...' %>% 
+    echo("addResearcherScoresDF", T, progress)
   d
 }
 #' Generate journal URL tag

@@ -13,7 +13,8 @@
 #' @examples
 #' dfKeywords<-createKeywordsDF(WoSDT)
 createKeywordsDF <- function(df) {
-  print('Transforming data frame, creating separate keywords...')
+  'Transforming data frame, creating separate keywords...' %>% 
+    echo("createKeywordsDF", F)
   dfKeywords <- filter(df, !is.na(keywords)) %>%
     select(key, year, jscore, ascore, nrecords, keywords) %>%
     separate(keywords, into = paste('kw', 1:10, sep = '_'), sep = ' and ') %>%
@@ -37,11 +38,13 @@ createKeywordsDF <- function(df) {
 #' (dfKeywordModifiedScore<-computeKeywordScores(dfKeywords))
 #' (dfKeywordModifiedScoreByYear<-computeKeywordScores(dfKeywords, byyear=T))
 computeKeywordScores <- function(dfKeywords, byyear = F) {
-  print('Computing word counts and scores')
+  'Computing word counts and scores' %>% 
+    echo("computeKeywordScores", F)
   df_ws <- dfKeywords %>%
     mutate(word_score = jscore * ascore * nrecords)
   if (byyear) {
-    print('Computing by year')
+    'Computing by year' %>% 
+      echo("computeKeywordScores", F)
     df_ws <- df_ws %>%
       select(year, keyword, word_score) %>%
       group_by(year, keyword) %>%
@@ -51,7 +54,8 @@ computeKeywordScores <- function(dfKeywords, byyear = F) {
       filter(!is.na(mscore)) %>%
       arrange(desc(year), desc(mscore))
   } else {
-    print('Computing for the whole library')
+    'Computing for the whole library' %>% 
+      echo("computeKeywordScores", F)
     df_ws <- df_ws %>%
       select(keyword, word_score) %>%
       group_by(keyword) %>%

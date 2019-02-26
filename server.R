@@ -669,7 +669,6 @@ shinyServer(function(input,output,clientData, session){
   #d$top_topic_model$topModel$summary
   #table top topic model summary
   output$tableTopicModelSummary = DT::renderDataTable({
-    print(rv$top_topic_model$topModel$summary)
     datatable(rv$top_topic_model$topModel$summary, rownames = F,
               colnames = c("Topic", "Cluster", "Coherence,%", "Documents", "Top Terms"),
 #              colnames = c("Topic", "Cluster", "Coherence,%", "Documents", "Top Terms", "Top Terms Prime"),

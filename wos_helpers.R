@@ -207,10 +207,28 @@ updateProgress <- function(progress, value = NULL, detail = NULL, progress_job =
   progress$set(value = value, detail = msg)
   print(msg)
 }
-#' Echo
+#' Configure logger
 #'
-#' @param msg string echo message
-#' @param log_con file log connection
+#' @param g fh service config file
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#' configure_log(g)
+configure_log<-function(g, logger_name="wos"){
+  removeHandler("writeToFile")
+  basicConfig()
+  #log_file<-file.path(g$paths$data, g$files$log_file)
+  #unlink("log_file")
+  addHandler(writeToFile, logger="", file=g$files$log_file)
+  echo("started", logger=logger_name)
+}
+#' Execute log rutine
+#'
+#' @param msg message
+#' @param logger logger name
+#' @param level logger level
 #' @param new_step boolean increase progress count by one?
 #' @param progress shiny app progress bar, default = NULL
 #'
@@ -218,14 +236,30 @@ updateProgress <- function(progress, value = NULL, detail = NULL, progress_job =
 #' @export
 #'
 #' @examples
-#' give_echo("message")
-give_echo<-function(msg, log_con=NULL, new_step=FALSE, progress=NULL){
-  cat(msg)
+#' logger<-"new"
+#' msg<-"some msg"
+#' echo(msg, logger)
+echo<-function(msg, logger="", new_step=FALSE, progress=NULL, level="info"){
+  loggger_name<-"wos"
   if(new_step){
     progress_nstep<<-progress_nstep + 1
   }
   if (!is.null(progress)) updateProgress(progress, detail = msg, progress_job)
-  if(!is.null(log_con)) cat(msg, file = log_con)
+  if(logger==loggger_name){
+    l="wos"
+  }else{
+    l<-str_glue("{loggger_name}.{logger}")
+  }
+  l
+  if(level=="info"){
+    loginfo(msg, logger=l)
+  }
+  if(level=="error"){
+    logerror(msg, logger=l)
+  }
+  if(level=="warn"){
+    logwarn(msg, logger=l)
+  }
 }
 
 #' Correct file path

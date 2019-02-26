@@ -31,7 +31,8 @@ convertDataFrameToBibTexHTML<-function(df){
 #' str(res)
 #' res$bib_item
 convertDataFrameToBibTex<-function(df){
-  print('Start converting data frame...')
+  'Start converting data frame...' %>% 
+    echo("convertDataFrameToBibTex", T)
   df %<>% 
     select(key, doi, publisher3, file, journal, author, year, volume, month, 
            pages, title, keywords, abstract)
@@ -80,10 +81,12 @@ convertDataFrameToBibTex<-function(df){
 #' df<-dfWoS[1,]
 #' saveDataFrameToBibTeX("WoS.bib")
 saveDataFrameToBibTeX <- function(df, bibFile) {
-  print('Saving bib records...')
+  'Saving bib records...' %>% 
+    echo("saveDataFrameToBibTeX", F)
   bibs<-convertDataFrameToBibTex(df)
   write.table(bibs, file = bibFile, append = F, row.names = F, col.names = F, quote = F, sep = '')
-  print('bibs saved.')
+  'bibs saved.' %>% 
+    echo("saveDataFrameToBibTeX", F)
 }
 #' Export library to RMarkdown document
 #'
@@ -111,7 +114,8 @@ exportLibraryToRMarkdown <- function(dfWoSExport, file_path) {
   if (file.exists(file_path)) file.remove(file_path)
   convertDataFrameToRMarkdown(dfWoSExport) %>% 
     write.table(file = file_path, append = F, row.names = F, col.names = F, quote = F, sep = '')
-  print(paste('RMarkdown references created and saved to file', file_path))
+  paste('RMarkdown references created and saved to file', file_path) %>% 
+    echo("exportLibraryToRMarkdown", T)
 }
 #' Convert data.frame to RMarkdown references
 #'

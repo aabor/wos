@@ -23,7 +23,7 @@ progress_job<-0
 
 #write_json(g, "config.json", pretty=T, simplifyVector = T, auto_unbox=T)
 g<-read_json("config.json", simplifyVector = T)
-
+configure_log(g, logger_name = "wos")
 # dfWoS %>% 
 #   group_by(year) %>% 
 #   summarise(n=n()) %>% 

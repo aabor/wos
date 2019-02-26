@@ -17,22 +17,18 @@
 #' deleteSourcePDFs<-F
 #' dfWoS<-import_bibtex_and_pdf(dfWoS)
 import_bibtex_and_pdf<-function(dfWoS, progress=NULL, deleteSourcePDFs=F){
-  #start log
-  log_path <- file.path(g$paths$db,'reindex_dataframe.txt')
-  if(file.exists(log_path))file.remove(log_path)
-  log_con <- file(log_path, open = "a")
-  paste(format(Sys.time(),"%Y-%m-%d %H:%M:%S", tz=g$tz), "log started\r\n") %>%   
-    give_echo(log_con, T, progress)
+  "Started" %>%   
+    echo("import_bibtex_and_pdf", T, progress)
   dfWoS %<>% 
     mutate(doi=str_to_lower(doi))
-  "loading bibliogrpaphy files from disk...\r\n" %>% 
-    give_echo(log_con, T, progress)
+  "loading bibliogrpaphy files from disk..." %>% 
+    echo("import_bibtex_and_pdf", T, progress)
   nrecordsAtStart<-nrow(dfWoS)
   rx <- "\\{(?:[^{}]*|(?R))*\\}" # matching balanced curly brackets
   files <- dir(g$paths$new_pdf, pattern = "\\.bib|\\.bibtex|\\.txt$", full.names = TRUE, recursive = TRUE)
   bibs <- map(files, function(f) {
     paste("extracting bib references", basename(f), "...") %>% 
-      give_echo(log_con, F, progress)
+      echo("import_bibtex_and_pdf", F, progress)
     bib<-readLines(f, encoding = "UTF-8") %>% 
       paste(collapse = " ") %>% 
       str_replace_all(pattern = '\n|\r|\t', ' ') %>% 
@@ -42,31 +38,31 @@ import_bibtex_and_pdf<-function(dfWoS, progress=NULL, deleteSourcePDFs=F){
       map(str_trim) %>% 
       map(str_squish) %>% 
       map(str_replace, pattern = "[ ,]+", replacement = ",")
-    paste("done\r\n") %>% 
-      give_echo(log_con, F, progress)
+    paste("done") %>% 
+      echo("import_bibtex_and_pdf", F, progress)
     bib
   }) %>% unlist
   paste(length(bibs), "bibliography items loaded\r\n") %>% 
-    give_echo(log_con, F, progress)
+    echo("import_bibtex_and_pdf", F, progress)
   
   files_to<-file.path(g$paths$bibarchive, basename(files))
   if(deleteSourcePDFs){
     res<-sum(file.rename(files, files_to))
     res %c% " bibliography files moved to bib archive\r\n" %>% 
-      give_echo(log_con, F, progress)
+      echo("import_bibtex_and_pdf", F, progress)
   }else{
     res<-sum(file.copy(files, files_to, overwrite = T))
     res %c% " bibliography files copied to bib archive\r\n" %>% 
-      give_echo(log_con, F, progress)
+      echo("import_bibtex_and_pdf", F, progress)
   }
   paste('converting', length(bibs), '.bibtex records to data.frame...') %>% 
-    give_echo(log_con, T, progress)
+    echo("import_bibtex_and_pdf", F, progress)
   
   non_digit <- "[^\\d]"
   jpublisher<-d$journals %>% 
     mutate(journal=mydbtitle) %>% 
     select(journal, publisher3)
-  dfLoadedBibs<-map_df(bibs, bib_to_df, log_con, progress) %>% 
+  dfLoadedBibs<-map_df(bibs, bib_to_df, progress) %>% 
     mutate(year=str_replace_all(year, pattern=non_digit, '')) %>% 
     select(doi, journal, author, year, volume, number, month, pages, title, keywords, abstract) %>% 
     subset(!is.na(author)) %>% 
@@ -89,8 +85,8 @@ import_bibtex_and_pdf<-function(dfWoS, progress=NULL, deleteSourcePDFs=F){
            journal=str_replace_all(journal, pattern = '&', 'and'),
            abstract=str_replace_all(abstract, "^(?:Abstract |ABSTRACT|Abstract)", '')) %>% 
     left_join(jpublisher, by="journal") %>% 
-    correctAuthorName(log_con, progress) %>% 
-    createBibKeys(log_con, progress) %>% 
+    correctAuthorName(progress) %>% 
+    createBibKeys(progress) %>% 
     mutate(year=as.numeric(year),
            number=as.numeric(number),
            updated=Sys.time()) %>% 
@@ -99,7 +95,7 @@ import_bibtex_and_pdf<-function(dfWoS, progress=NULL, deleteSourcePDFs=F){
          title, keywords, abstract, file, updated)
   
   "converted successfully " %c% nrow(dfLoadedBibs) %c% " bibliography records\r\n" %>% 
-    give_echo(log_con, F, progress)
+    echo("import_bibtex_and_pdf", F, progress)
   nbefore<-nrow(dfWoS)
   records_to_update<-intersect(dfLoadedBibs$key, dfWoS$key)
   nrecords_to_update<-length(records_to_update)
@@ -112,26 +108,26 @@ import_bibtex_and_pdf<-function(dfWoS, progress=NULL, deleteSourcePDFs=F){
     mutate(doi=str_to_lower(doi))
   nafter<-nrow(dfWoS)
   paste(nbefore - nafter, "records with duplicate keys have been deleted", nrecords_to_update, "will be updated\r\n") %>% 
-    give_echo(log_con, F, progress)
-
+    echo("import_bibtex_and_pdf", F, progress)
+  
   files<-dir(g$paths$new_pdf, pattern = "\\.zip$", full.names = TRUE, recursive = TRUE)
   nfiles<-length(files)
   paste("extracting", nfiles, ".zip archives with full texts...") %>% 
-    give_echo(log_con, F, progress)
+    echo("import_bibtex_and_pdf", F, progress)
   if(nfiles>0){
     map(files, unzip, exdir=g$paths$new_pdf)
     file.remove(files)
   }
   paste(nfiles, "archives extracted.", nfiles,".zip files deleted...\r\n",
              "Reading .pdf files\r\n") %>% 
-    give_echo(log_con, F, progress)
+    echo("import_bibtex_and_pdf", F, progress)
   
   files <- dir(g$paths$new_pdf, pattern = "\\.pdf$", full.names = TRUE, recursive = TRUE)
   paste(length(files), "files will be processed\r\n") %>% 
-    give_echo(log_con, F, progress)
-  df_filename_doi<-get_filename_doi(files, log_con, progress)
+    echo("import_bibtex_and_pdf", F, progress)
+  df_filename_doi<-get_filename_doi(files, progress)
   "adding full text file paths to loaded bibliography records\r\n" %>% 
-    give_echo(log_con, F, progress)
+    echo("import_bibtex_and_pdf", F, progress)
   dfNewPDFs<-dfWoS %>% 
     select(-file) %>% 
     right_join(df_filename_doi, by="doi") %>% 
@@ -140,28 +136,29 @@ import_bibtex_and_pdf<-function(dfWoS, progress=NULL, deleteSourcePDFs=F){
     mutate(file=ifelse(is.na(file), NA,paste(key,".pdf", sep="")))
   if(nrow(dfNewPDFs)>0){
       if(deleteSourcePDFs){
-        "deleting source pdf files...\r\n" %>% 
-          give_echo(log_con, T, progress)
+        "deleting source pdf files..." %>% 
+          echo("import_bibtex_and_pdf", F, progress)
         dfNewPDFs %>% 
           mutate(res=pmap(list(file_from, file_to), function(ff, ft){
             res<-file.rename(from = ff, to = ft)
-            paste("file", ff, "deleted", ft, "\r\n") %>% 
-              give_echo(log_con, F, progress)
+            paste("file", ff, "deleted", ft) %>% 
+              echo("import_bibtex_and_pdf", F, progress)
             res
           }))
         paste(nrow(dfNewPDFs), "files deleted\r\n") %>% 
-          give_echo(log_con, F, progress)
+          echo("import_bibtex_and_pdf", F, progress)
       }else{
         "coping pdf files...\r\n" %>% 
-          give_echo(log_con, T, progress)
+          echo("import_bibtex_and_pdf", T, progress)
         dfNewPDFs %>% 
           mutate(res=pmap(list(file_from, file_to), function(ff, ft){
             res<-file.copy(from = ff, to = ft, overwrite = T)
             paste("file", ff, "copied to", ft, "\r\n") %>% 
-              give_echo(log_con, F, progress)
+              echo("import_bibtex_and_pdf", F, progress)
             res
           }))
-        paste(nrow(dfNewPDFs), "files copied\r\n")
+        paste(nrow(dfNewPDFs), "files copied") %>% 
+          echo("import_bibtex_and_pdf", F, progress)
       }
   }
   titles_to_delete<-c("Editorial","Guest Editorial", 
@@ -170,23 +167,22 @@ import_bibtex_and_pdf<-function(dfWoS, progress=NULL, deleteSourcePDFs=F){
   dfWoS<-dfWoS %>% 
     filter(!(title %in% titles_to_delete)) %>% 
     distinct(key, .keep_all = T) %>% 
-    check_pdf_file_references(log_con, progress)
+    check_pdf_file_references(progress)
   nrecordsAtEnd<-nrow(dfWoS)
   nNewRecords<-nrecordsAtEnd-nrecordsAtStart
-  report_msg<-paste("In old data base", nrecordsAtStart, "records, in updated data base", nrecordsAtEnd,
-        "records \r\nIn total", nNewRecords, "records added \r\n")
-  give_echo(report_msg, log_con, F, progress)
+  paste("In old data base", nrecordsAtStart, "records, in updated data base", nrecordsAtEnd,
+        "records \r\nIn total", nNewRecords, "records added \r\n") %>% 
+    echo("import_bibtex_and_pdf", F, progress)
   "saving data.frame in .bibtex format\r\n" %>% 
-    give_echo(log_con, T, progress)
+    echo("import_bibtex_and_pdf", T, progress)
   dfWoS %>% filter(is.na(key))
   
   saveDataFrameToBibTeX(dfWoS, g$files$bibWoS)
   "saving data.frame in .rds format\r\n" %>% 
-    give_echo(log_con, F, progress)
+    echo("import_bibtex_and_pdf", F, progress)
   saveWoSLibrary(dfWoS)
   "pdf files imported, data frame saved\r\n" %>% 
-    give_echo(log_con, F, progress)
-  close(log_con)
+    echo("import_bibtex_and_pdf", F, progress)
   dfWoS
 }
 #' Get doi data.frame
@@ -203,25 +199,25 @@ import_bibtex_and_pdf<-function(dfWoS, progress=NULL, deleteSourcePDFs=F){
 #' files<-dir(g$paths$new_pdf, pattern = "\\.pdf$", full.names = TRUE, recursive = TRUE)
 #' filename_doi(files) %>% head
 #' dois<-get_filename_doi(files)$doi
-get_filename_doi<-function(files, log_con=NULL, progress=NULL){
+get_filename_doi<-function(files, progress=NULL){
   nfiles<-length(files)
   if(nfiles==0)return({
     data.frame(file="",doi="", stringsAsFactors = F)[0,]
     })
   df<-data.frame(file=files, 
-                 doi=map(files,extract_doi_from_metadata, log_con, progress) %>% 
+                 doi=map(files,extract_doi_from_metadata, progress) %>% 
                    unlist, 
                  stringsAsFactors = F) %>% 
     subset(!is.na(doi))  
   paste("in", nrow(df), "PDF files the doi was found in metadata\r\n") %>% 
-    give_echo(log_con, F, progress)
+    echo("get_filename_doi", F, progress)
   notfound<-setdiff(files, df$file)
   if(length(notfound)>0){
     paste("warning: cannot find doi for", length(notfound),"files:", 
                notfound%>%
                  basename() %>% 
                  glue_collapse(sep = ", ", last=" and "), "\r\n") %>% 
-      give_echo(log_con, F, progress)
+      echo("get_filename_doi", F, progress)
   }
   dfDup<-df %>% 
     filter(duplicated(.[["doi"]]))
@@ -233,7 +229,7 @@ get_filename_doi<-function(files, log_con=NULL, progress=NULL){
                  sep = ", ", 
                  last=" and "), 
         "\r\n") %>% 
-    give_echo(log_con, F, progress)
+    echo("get_filename_doi", F, progress)
   df<-df %>% 
     filter(!duplicated(.[["doi"]])) %>% 
     mutate(doi=str_to_lower(doi))
@@ -258,17 +254,13 @@ get_filename_doi<-function(files, log_con=NULL, progress=NULL){
 #' @examples
 #' progress<-NULL
 load_bib_entries_for_downloaded_pdfs<-function(progress){
-  log_path <- file.path(g$paths$db,'download_bib_entries_log.txt')
-  if(file.exists(log_path))file.remove(log_path)
-  log_con <- file(log_path, open = "a")
-  paste(format(Sys.time(),"%Y-%m-%d %H:%M:%S", tz=g$tz), "log started\r\n") %>%   
-    give_echo(log_con, T, progress)
-  
+  "Started" %>% 
+    echo("load_bib_entries_for_downloaded_pdfs", T, progress)
   files<-dir(g$paths$new_pdf, pattern = "\\.pdf$", full.names = TRUE, recursive = TRUE)
-  dois<-get_filename_doi(files, log_con, progress)
+  dois<-get_filename_doi(files, progress)
   #dois1<-dois[20:21,]
   "searching bib entries in http://dx.doi.org\r\n" %>% 
-    give_echo(log_con, T, progress)
+    echo("load_bib_entries_for_downloaded_pdfs", T, progress)
   
   dfResult<-dois1 %>% 
     rowwise() %>% 
@@ -277,7 +269,7 @@ load_bib_entries_for_downloaded_pdfs<-function(progress){
       bibFound<-F
       tryCatch({
         paste("searching bib entry for", basename(.$file), "\r\n") %>% 
-          give_echo(log_con, F, progress)
+          echo("load_bib_entries_for_downloaded_pdfs", F, progress)
         GetBibEntryWithDOI(.$doi, 
                            temp.file = , 
                            delete.file = F)
@@ -285,24 +277,22 @@ load_bib_entries_for_downloaded_pdfs<-function(progress){
       }, error = function(e) {    
         paste("could not get bib entry\r\n", 
               "error message:", e, "\r\n") %>% 
-          give_echo(log_con, F, progress)
+          echo("load_bib_entries_for_downloaded_pdfs", F, progress, level="error")
       })
       Sys.sleep(10)
       data.frame(doi=.$doi, file=basename(.$file), bib=ifelse(bibFound, basename(bib_path), NA))
     })
   bibs_loaded<-nrow(dfResult) - dfResult %>% pull(bib) %>% is.na %>% sum()
   results_report_path<-file.path(g$paths$db, "bib_entries_loaded.csv")
-  msg<-paste(nrow(dois), 
+  paste(nrow(dois), 
              "total dois found", 
              bibs_loaded, 
              "bib entries downloaded, report saved to", 
-             results_report_path, "\r\n") 
-  msg %>% 
-    give_echo(log_con, F, progress)
+             results_report_path, "\r\n") %>% 
+    echo("load_bib_entries_for_downloaded_pdfs", F, progress)
   write_csv(dfResult, results_report_path)
-  close(log_con)
   msg
-  }
+}
 #' Get DOI from PDF
 #'
 #' Extracts doi from metadata in PDF file. Depends on 'pdftools' library, which
@@ -315,14 +305,13 @@ load_bib_entries_for_downloaded_pdfs<-function(progress){
 #' @export
 #'
 #' @examples
-#' log_con<-NULL
 #' progress<-NULL
 #' files <- dir(g$paths$new_pdf, pattern = "\\.pdf$", full.names = TRUE, recursive = TRUE)
 #' basename(files)
 #' (pdf_file_name<-files[78])
-extract_doi_from_metadata<-function(pdf_file_name, log_con=NULL, progress=NULL){
+extract_doi_from_metadata<-function(pdf_file_name, progress=NULL){
   paste("extracting doi from pdf file:", basename(pdf_file_name), "...") %>% 
-    give_echo(log_con, F, progress)
+    echo("extract_doi_from_metadata", T, progress)
   doi<-NULL
   info<-NULL
   tryCatch({
@@ -330,7 +319,7 @@ extract_doi_from_metadata<-function(pdf_file_name, log_con=NULL, progress=NULL){
   }, error = function(e) {    
     paste("could not read metadata\r\n", 
               "error message:", e, "\r\n") %>% 
-      give_echo(log_con, F, progress)
+      echo("extract_doi_from_metadata", F, progress, level="error")
   })
   if(!is.null(info)){
     tryCatch({
@@ -346,14 +335,14 @@ extract_doi_from_metadata<-function(pdf_file_name, log_con=NULL, progress=NULL){
           doi<-NULL
         }else{
           paste(doi, "in key\r\n") %>% 
-            give_echo(log_con, F, progress)
+            echo("extract_doi_from_metadata", F, progress)
           return(doi)
         }
       }
     }, error = function(e) {    
       paste("Error reading metadata\r\n", 
             "error message:", e, "\r\n") %>% 
-        give_echo(log_con, F, progress)
+        echo("extract_doi_from_metadata", F, progress, level="error")
     })
     # try to get doi from deep metadata tags (not visible from Acrobat Reader)
     tryCatch({
@@ -362,13 +351,13 @@ extract_doi_from_metadata<-function(pdf_file_name, log_con=NULL, progress=NULL){
       if(length(dois)>0){
         doi<-dois[1]
         paste(doi, "in meta data tags\r\n") %>% 
-          give_echo(log_con, F, progress)
+          echo("extract_doi_from_metadata", F, progress)
         return(doi)
       }
     }, error = function(e) {    
       paste("Error parsing html metadata code\r\n", 
             "error message:", e, "\r\n") %>%     
-        give_echo(log_con, F, progress)
+        echo("extract_doi_from_metadata", F, progress)
     })
   }
   # try to det doi from text on the first page of pdf document
@@ -379,16 +368,16 @@ extract_doi_from_metadata<-function(pdf_file_name, log_con=NULL, progress=NULL){
   }, error = function(e) {    
     paste("Error reading full text\r\n", 
           "error message:", e, "\r\n") %>% 
-      give_echo(log_con, F, progress)
+      echo("extract_doi_from_metadata", F, progress, level = "error")
     return(NA)
   })
   paste("searching doi in full text...") %>% 
-    give_echo(log_con, F, progress)
+    echo("extract_doi_from_metadata", F, progress)
   doi<-first_page %>%
     get_doi_from_first_page
   if(is.na(doi)){
     paste("searching doi on the first page image...") %>% 
-      give_echo(log_con, F, progress)
+      echo("extract_doi_from_metadata", F, progress)
     pdf_render_page(pdf_file_name, page=1, dpi=600) %>% 
       png::writePNG(g$files$pdf_first_page)
     doi<-ocr(g$files$pdf_first_page) %>% 
@@ -397,13 +386,12 @@ extract_doi_from_metadata<-function(pdf_file_name, log_con=NULL, progress=NULL){
   if(!is.na(doi)){
     doi %<>%  str_replace("doi ", "") %>% 
       str_trim()
-    msg<-paste(doi, "\r\n")
-    cat(msg)
-    cat(msg, file =  log_con)
+    doi %>% 
+      echo("extract_doi_from_metadata", F, progress)
     return(doi)
   }else{
-    "not found\r\n" %>% 
-      give_echo(log_con, F, progress)
+    "doi not found" %>% 
+      echo("extract_doi_from_metadata", F, progress)
     return(NA)
   }
 }
@@ -443,12 +431,10 @@ get_doi_from_first_page<-function(first_page){
 #'
 #' @examples
 #' progress<-NULL
-#' log_con<-NULL
 #' check_pdf_file_references(dfWoS)
-#' 
-check_pdf_file_references<-function(dfWoS, log_con=NULL, progress=NULL){
+check_pdf_file_references<-function(dfWoS, progress=NULL){
   "correcting file names..." %>% 
-    give_echo(log_con, F, progress)
+    echo("check_pdf_file_references", F, progress)
   dfWoS %<>% 
     mutate(file_name=paste(key,".pdf", sep=""),
            file_path=file.path(g$paths$pdf, file_name)) %>% 
@@ -456,10 +442,10 @@ check_pdf_file_references<-function(dfWoS, log_con=NULL, progress=NULL){
     select(-file_name, -file_path) %>% 
     mutate(year=ifelse(is.na(year), get_pdf_creation_year(file), year))
   "file names corrected,\r\ncounting full text records..." %>% 
-    give_echo(log_con, T, progress)
+    echo("check_pdf_file_references", T, progress)
   stat<-file.path(g$paths$pdf, dfWoS$file) %>% file.exists %>% sum
   paste(stat, "full text found.\r\n") %>% 
-    give_echo(log_con, T, progress)
+    echo("check_pdf_file_references", T, progress)
   dfWoS
 }
 #' Get pdf creation date

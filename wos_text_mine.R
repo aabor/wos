@@ -19,10 +19,8 @@
 #' topicAnalysis(df)
 topicAnalysis<-function(df, frontier_year=2016, progress = NULL){
   # Create a document term matrix
-  msg<-"creating document term matrix"
-  if (!is.null(progress)) {
-    updateProgress(progress, detail = msg)
-  }
+  "creating document term matrix" %>% 
+    echo("topicAnalysis", T, progress)
   df<-df %>% 
     filter(!is.na(year)) %>% 
     filter(year>frontier_year) %>% 
@@ -32,21 +30,15 @@ topicAnalysis<-function(df, frontier_year=2016, progress = NULL){
                    ngram_window = c(1, 2))
   
   dim(dtm)
-  progress_nstep<<-progress_nstep + 1
-  msg<-paste("document terms matrix of dimensions", glue_collapse(dim(dtm), sep=":"), "created...")
-  if (!is.null(progress)) {
-    updateProgress(progress, detail = msg)
-  }
-  
+  paste("document terms matrix of dimensions", glue_collapse(dim(dtm), sep=":"), "created...") %>% 
+    echo("topicAnalysis", T, progress)
+
   # explore basic frequencies & curate vocabulary
   tf <- TermDocFreq(dtm = dtm)
   
-  progress_nstep<<-progress_nstep + 1
-  msg<-paste("basic frequencies & curate vocabulary matrix with", nrow(tf), "terms (in rows) created...")
-  if (!is.null(progress)) {
-    updateProgress(progress, detail = msg)
-  }
-
+  paste("basic frequencies & curate vocabulary matrix with", nrow(tf), "terms (in rows) created...") %>% 
+    echo("topicAnalysis", T, progress)
+  
   # Eliminate words appearing less than 2 times or in more than half of the
   # documents
   vocabulary <- tf$term[ tf$term_freq > 1 & tf$doc_freq < nrow(dtm) / 2 ]
@@ -57,10 +49,8 @@ topicAnalysis<-function(df, frontier_year=2016, progress = NULL){
   dim(dtm)
   
   # fit some LDA models and select the best number of topics
-  msg<-"fitting LDA models"
-  if (!is.null(progress)) {
-    updateProgress(progress, detail = msg)
-  }
+  "fitting LDA models" %>% 
+    echo("topicAnalysis", T, progress)
   k_list <- seq(5, 50, by = 5)
   
   model_dir <-file.path(g$paths$topic_models, 
@@ -127,12 +117,9 @@ topicAnalysis<-function(df, frontier_year=2016, progress = NULL){
   
   names(model) # phi is P(words | topics), theta is P(topics | documents)
 
-  progress_nstep<<-progress_nstep + 1
-  msg<-paste("coherence matrix calculated... computing summary statistics")
-  if (!is.null(progress)) {
-    updateProgress(progress, detail = msg)
-  }
-  
+  paste("coherence matrix calculated... computing summary statistics") %>% 
+    echo("topicAnalysis", T, progress)
+
   # Calculate some summary statistics etc. Which is the real value-add of textmineR
   
   # Get the R-squared of this model
@@ -156,40 +143,27 @@ topicAnalysis<-function(df, frontier_year=2016, progress = NULL){
   
   model$assignments[ is.na(model$assignments) ] <- 0
 
-  progress_nstep<<-progress_nstep + 1
-  msg<-"models summary statistics calculated..."
-  if (!is.null(progress)) {
-    updateProgress(progress, detail = msg)
-  }
-  
-  
+  "models summary statistics calculated..." %>% 
+    echo("topicAnalysis", T, progress)
+
   # Get some topic labels using n-grams from the DTM
   model$labels <- LabelTopics(assignments = model$assignments, 
                               dtm = dtm,
                               M = 2)
-  progress_nstep<<-progress_nstep + 1
-  msg<-"topic labels using n-grams from the DTM calculated..."
-  if (!is.null(progress)) {
-    updateProgress(progress, detail = msg)
-  }
-  
+  "topic labels using n-grams from the DTM calculated..." %>% 
+    echo("topicAnalysis", T, progress)
+
   # Probabilistic coherence: measures statistical support for a topic
   model$coherence <- CalcProbCoherence(phi = model$phi, dtm = dtm, M = 5)
-  progress_nstep<<-progress_nstep + 1
-  msg<-"probabilistic coherence: measures statistical support for a topic calculated..."
-  if (!is.null(progress)) {
-    updateProgress(progress, detail = msg)
-  }
-  
-  
+  "probabilistic coherence: measures statistical support for a topic calculated..." %>% 
+    echo("topicAnalysis", T, progress)
+
   # Number of documents in which each topic appears
   model$num_docs <- colSums(model$assignments > 0)
   
-  progress_nstep<<-progress_nstep + 1
-  msg<-"summary statistics calculated... clastering topics"
-  if (!is.null(progress)) {
-    updateProgress(progress, detail = msg)
-  }
+  "summary statistics calculated... clastering topics" %>% 
+    echo("topicAnalysis", T, progress)
+
   # cluster topics together in a dendrogram
   model$topic_linguistic_dist <- CalcHellingerDist(model$phi)
   
@@ -207,12 +181,9 @@ topicAnalysis<-function(df, frontier_year=2016, progress = NULL){
   plot(model$hclust)
   rect.hclust(model$hclust, k = length(unique(model$hclust$clustering)))
 
-  progress_nstep<<-progress_nstep + 1
-  msg<-"topics clustered saving results..."
-  if (!is.null(progress)) {
-    updateProgress(progress, detail = msg)
-  }
-  
+  "topics clustered saving results..." %>% 
+    echo("topicAnalysis", T, progress)
+
   # make a summary table
   model$summary <- data.frame(topic     = rownames(model$phi),
                               cluster   = model$hclust$clustering,
@@ -244,10 +215,6 @@ topicAnalysis<-function(df, frontier_year=2016, progress = NULL){
   file_name_rds<-file.path(g$paths$db,"top_research_topics.rds")
   write_rds(model$summary, file_name_rds)
   write_csv(model$summary, file.path(g$paths$db,"top_research_topics.csv"))
-  progress_nstep<<-progress_nstep + 1
-  msg<-paste("summary table created and saved to file", file_name_rds)
-  if (!is.null(progress)) {
-    updateProgress(progress, detail = msg)
-  }
-  
+  paste("summary table created and saved to file", file_name_rds) %>% 
+    echo("topicAnalysis", T, progress)
 }

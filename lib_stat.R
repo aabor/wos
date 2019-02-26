@@ -1,7 +1,6 @@
 #' Compute research papers statistics
 #'
 #' @param dfWoS data frame with bibliography records
-#' @param log_con log txt file
 #' @param progress 
 #'
 #' @return
@@ -11,10 +10,10 @@
 #' progress<-NULL
 #' dfWoS$number<-NA
 #' compute_research_papers_statistics(d, dfWoS)
-compute_research_papers_statistics<-function(d, dfWoS, log_con=NULL, progress=NULL)
+compute_research_papers_statistics<-function(d, dfWoS, progress=NULL)
 {
-  'computing whole library statistics...\r\n' %>% 
-    give_echo(log_con, T, progress)
+  'computing whole library statistics...' %>% 
+    echo("compute_research_papers_statistics", T, progress)
   dfWoSaug<-dfWoS %>% 
     mutate(IsFullText = ifelse(is.na(file) | file == '', F, T),
            IsAbstract = ifelse(is.na(abstract) | abstract == '', F, T)) %>% 
@@ -45,16 +44,14 @@ compute_research_papers_statistics<-function(d, dfWoS, log_con=NULL, progress=NU
               end=max(year)) %>% 
     arrange(desc(njournals), desc(avgjscore))
   'whole library statistics was created...\r\n' %>% 
-    give_echo(log_con, F, progress)
+    echo("compute_research_papers_statistics", F, progress)
   'Creating separate statistics for each journal...\r\n' %>% 
-    give_echo(log_con, T, progress)
+    echo("compute_research_papers_statistics", F, progress)
   d$libstat$detailed<-separateJournalsStatistics(dfWoSaug, progress)
   'detailed library statistics was created...\r\n' %>% 
-    give_echo(log_con, T, progress)
+    echo("compute_research_papers_statistics", T, progress)
   'Library statistics created...\r\n' %>% 
-    give_echo(log_con, F, progress)
-  paste(format(Sys.time(),"%Y-%m-%d %H:%M:%S", tz=g$tz), "log closed\r\n") %>% 
-    give_echo(log_con, F, progress)
+    echo("compute_research_papers_statistics", F, progress)
   d
 }
 #' Totals for library descriptive statistics

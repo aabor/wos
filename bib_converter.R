@@ -61,17 +61,17 @@ GetBibKey <- function(publisher3, author, year, pages) {
 #' dfNewBib<-dfLoadedBibs %>% filter(journal=="The Quarterly Journal of Economics")
 #' nrow(dfNewBib)
 #' createBibKeys(dfNewBib) %>% head
-createBibKeys <- function(dfNewBib,  log_con=NULL, progress=NULL) {
+createBibKeys <- function(dfNewBib, progress=NULL) {
   'Creating bib keys...' %>% 
-    give_echo(log_con, T, progress)
+    echo("createBibKeys", T, progress)
   df<-dfNewBib %>% 
     mutate(key=pmap_chr(list(publisher3, author, year, pages), GetBibKey)) %>% 
     distinct(key, .keep_all = T) %>% 
     arrange(journal, desc(year))
   paste('created', nrow(df), 'bib keys...') %>% 
-    give_echo(log_con, F, progress)
+    echo("createBibKeys", F, progress)
   paste(nrow(dfNewBib)-nrow(df), 'duplicates deleted...') %>% 
-    give_echo(log_con, F, progress)
+    echo("createBibKeys", F, progress)
   df
 }
 #' Correct author names
@@ -87,16 +87,16 @@ createBibKeys <- function(dfNewBib,  log_con=NULL, progress=NULL) {
 #' df$author
 #' res<-correctAuthorName(df)
 #' res$author
-correctAuthorName <- function(df, log_con=NULL, progress=NULL) {
-  'Swapping first and last names...\r\n' %>% 
-    give_echo(log_con, T, progress)
+correctAuthorName <- function(df, progress=NULL) {
+  'Swapping first and last names...' %>% 
+    echo("correctAuthorName", T, progress)
   df1 <- filter(df, !str_detect(author, pattern = ','))
   df2 <- filter(df, str_detect(author, pattern = ','))
   df1<-df1 %>% 
     mutate(author=pmap_chr(list(author, publisher3), function(author, publisher3){
       ret<-""
       paste("correcting names:", publisher3, author, "\r\n") %>% 
-        give_echo(log_con, F, progress)
+        echo("correctAuthorName", F, progress)
       auths<-str_split(author, pattern = ' and ') %>% unlist
       if(publisher3=="wly"){
         auths<-map(auths, str_replace, " ", ", ") %>% unlist
@@ -119,7 +119,8 @@ correctAuthorName <- function(df, log_con=NULL, progress=NULL) {
   df <- bind_rows(df1, df2) %>% 
     mutate(author=map_chr(author, str_to_title)) %>% 
     mutate(author=map_chr(author, str_replace_all, pattern = " And ", replacement = " and "))
-  print('Author`s names corrected.')
+  'Author`s names corrected.' %>% 
+    echo("correctAuthorName", F, progress)
   df
 }
 #' Converts bibtex bibliography record to data.frame
@@ -131,8 +132,7 @@ correctAuthorName <- function(df, log_con=NULL, progress=NULL) {
 #'
 #' @examples
 #' bib<-bibs[1]
-bib_to_df <- function(bib,  log_con=NULL, progress=NULL) {
-  print(bib)
+bib_to_df <- function(bib, progress=NULL) {
   tryCatch({
     pattern<-",[ ]*([\\w]+)[ ]*="
     fields <- str_match_all(bib, pattern)[[1]][, 2]
@@ -163,8 +163,10 @@ bib_to_df <- function(bib,  log_con=NULL, progress=NULL) {
       return(NA)
     }
   }, error = function(e) {
-    cat(paste("Bib",bib, "caused error:", '\r\n'))
-    cat(paste(e, '\r\n'))
+    paste("Bib",bib, "caused error:", '\r\n') %>% 
+      echo("bib_to_df", F, progress, level = "error")
+    paste(e, '\r\n') %>% 
+      echo("bib_to_df", F, progress, level = "error")
   })
   fixed_names<-c("doi", "journal", "author", "year", "volume", "number", "month", "pages", "title", "keywords", "abstract")
   map(fixed_names, function(n){
@@ -173,14 +175,14 @@ bib_to_df <- function(bib,  log_con=NULL, progress=NULL) {
     }
   })
   if(is.na(df$title)){
-    paste("No title:", glue_collapse(df$title, df$author, df$journal, sep=" "), "\r\n") %>% 
-    give_echo(log_con, F, progress)
+    "No title:" %c% glue_collapse(df$title, df$author, df$journal, sep=" ") %>% 
+      echo("bib_to_df", F, progress)
     return(NA)
   }else{
     df %<>% 
       mutate(journal=str_replace(journal, pattern="JCMS: ", replacement = ""))
-    paste(df$title, "\r\n") %>% 
-      give_echo(log_con, F, progress)
+    df$title %>% 
+      echo("bib_to_df", F, progress)
     df
   }
 }

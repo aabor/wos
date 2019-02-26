@@ -118,3 +118,12 @@ library(rvest)
 # consisting of calculating descriptive statistics, drawing graphical summaries and reporting the results
 # %overlaps% determines if two date ranges overlap
 library(DescTools)
+# Pure R implementation of the ubiquitous log4j package. It offers hierarchic
+# loggers, multiple handlers per logger, level based filtering, space handling
+# in messages and custom formatting.
+suppressMessages(library(logging))
+# timing of expression evaluation
+suppressMessages(library(microbenchmark))
+# Benchmark your CPU and compare against other CPUs. Also provides functions for
+# obtaining system specifications, such as RAM, CPU type, and R version.
+suppressMessages(library("benchmarkme"))
