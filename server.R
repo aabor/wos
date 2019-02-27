@@ -6,6 +6,8 @@ rv <- reactiveValues(WoSExportDT = dfWoSExport,
                      JournalsDT=d$libstat$jcitescores,
                      WholeLibraryStatDT=d$libstat$general,
                      DetailedLibraryStatDT=d$libstat$detailed,
+                     UpdatePlanDT=d$libstat$updatePlan,
+                     UpdateHistoryDT=d$libstat$updateHistory,
                      PublisherStatDT=d$publishers,
                      keywordsmodifiedScores=d$keywords$modifiedScores,
                      keywordsmodifiedScoresByYear=d$keywords$modifiedScoresByYear,
@@ -573,6 +575,17 @@ shinyServer(function(input,output,clientData, session){
                 pageLength = 60
               ),
               selection = 'single')
+  })
+  output$tableJournalUpdatePlan=DT::renderDataTable({
+    datatable(rv$UpdatePlanDT, rownames = F,
+              escape=F, selection="single"#,
+              #lengthMenu = list(c(5, 15, 60), c('5', '15', "60")),
+              #pageLength = 60
+    )
+  })
+  output$tableJournalUpdatesHistory=DT::renderDataTable({
+    datatable(rv$UpdateHistoryDT, rownames = F,
+              escape=F)
   })
   #table with publishers statistics
   output$tablePublisherStat = DT::renderDataTable({

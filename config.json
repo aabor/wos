@@ -22,7 +22,8 @@
     "rdsWoS_old": "/home/rstudio/Documents/Library/wos/db/WoS_backup.rds",
     "csvWoS_old": "/home/rstudio/Documents/Library/wos/db/WoS_backup.csv",
     "pdf_first_page": "img/pdf_first_page.png",
-    "rdsbib":"bibliography.rds"
+    "rdsbib":"bibliography.rds",
+    "csvJournalUpdatePlan":"/home/rstudio/Documents/Library/wos/j_update_plan.csv"
   },
   "colnames":{
     "wos_dt":["pdf","authors", "jscore", "ascore", "nrecords", "title7", "year", "jacro", "publisher3", "updated"],

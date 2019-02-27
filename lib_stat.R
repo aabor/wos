@@ -50,6 +50,8 @@ compute_research_papers_statistics<-function(d, dfWoS, progress=NULL)
   d$libstat$detailed<-separateJournalsStatistics(dfWoSaug, progress)
   'detailed library statistics was created...\r\n' %>% 
     echo("compute_research_papers_statistics", T, progress)
+  d$libstat$updatePlan<-get_journal_update_plan(dfWoS)
+  d$libstat$updateHistory<-get_updates_history_stat(dfWoS)
   'Library statistics created...\r\n' %>% 
     echo("compute_research_papers_statistics", F, progress)
   d
@@ -256,4 +258,50 @@ separateJournalsStatistics <- function(dfWoSaug, progress=NULL) {
   names(l)<-journals
   l
 }
-
+#' Create journal update plan for Web Scrapping
+#'
+#' @param dfWoS 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#' plan<-get_journal_update_plan(dfWoS)
+#' names(plan)
+#' plan %>% filter(is.na(last_volume_url))
+#' plan$last_volume_url
+#' plan[45,]
+get_journal_update_plan<-function(dfWoS, saveToFile=T){
+  res<-dfWoS %>% 
+    select(journal, volume, updated) %>% 
+    group_by(journal) %>% 
+    summarise(start_volume=unique(volume) %>% last,
+              last_update=unique(updated) %>% last) %>% 
+    mutate(start_volume=as.integer(start_volume)+1L) %>% 
+    left_join(  d$journals %>% 
+                  mutate(url_path=pmap_chr(list(publisher3, url, mydbtitle, url_tocken), get_url_path)) %>% 
+                  select(mydbtitle, url_path, publisher3)
+              , by=c("journal"="mydbtitle")) %>% 
+    mutate(start_volume_url=file.path(url_path, "vol", start_volume)) %>%
+    mutate(start_volume_url=pmap_chr(list(start_volume_url), generate_last_volume_url_tag)) %>% 
+    select(journal, publisher3, start_volume, last_update, start_volume_url) %>% 
+    mutate(last_update = format(last_update, "%Y-%m-%d %H:%M:%S", tz = g$tz))
+  write_csv(res, g$files$csvJournalUpdatePlan)
+  res
+}
+#' Get updates history
+#'
+#' @param dfWoS 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#' get_updates_history_stat(dfWoS)
+get_updates_history_stat<-function(dfWoS){
+  dfWoS %>% 
+    group_by(updated) %>% 
+    summarise(n=n()) %>% 
+    arrange(desc(updated)) %>% 
+    mutate(updated = format(updated, "%Y-%m-%d %H:%M:%S", tz = g$tz))
+}

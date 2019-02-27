@@ -404,6 +404,37 @@ addResearcherScoresDF <- function(d, dfWoS, progress=NULL) {
     echo("addResearcherScoresDF", T, progress)
   d
 }
+#' Get journal url path
+#'
+#' @param publisher3 
+#' @param url 
+#' @param title 
+#' @param url_tocken 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#' d$journals %>% filter(mydbtitle=="Journal of Development Economics")
+#' (df<-d$journals[45,])
+#' (publisher3<-df$publisher3)
+#' (url<-df$url)
+#' (title<-df$title)
+#' (url_tocken<-df$url_tocken)
+#' get_url_path(publisher3, url, title, url_tocken)
+get_url_path<-function(publisher3, url, title, url_tocken){
+  ret<-switch(publisher3,
+                   elr=elr_url(url, title),
+                   oup=file.path(url, url_tocken, "issue"),
+                   aea=file.path(url, url_tocken, "issues"),
+                   now=url,
+                   ares=url,
+                   cup={
+                     name<-str_to_lower(title) %>% str_split(" ") %>% unlist %>% glue_collapse(sep="-")
+                     file.path(url, name, "all-issues")
+                   },
+                   file.path(url, url_tocken))
+}
 #' Generate journal URL tag
 #'
 #' Use this tag in UI, for example in Data Table cells
@@ -414,37 +445,36 @@ addResearcherScoresDF <- function(d, dfWoS, progress=NULL) {
 #' @export
 #'
 #' @examples
-#' title<-"Journal of Development Economics"
-#' publisher3 = "elr"
-#' generate_journal_url_tag(journal)
+#' (df<-d$journals[53,])
+#' (title<-df$title)
+#' (publisher3<-df$publisher3)
+#' (url<-df$url)
+#' (url_tocken<-df$url_tocken)
+#' generate_journal_url_tag(title, publisher3, url, url_tocken)
 generate_journal_url_tag <- function(title, publisher3, url, url_tocken) {
   #print(journal)
   url_tag<-title
-  url_path<-""
-  if(publisher3 == "elr"){
-    title<-str_replace_all(title, pattern = "[[:punct:]]", replacement = "")
-    name<-str_to_lower(title) %>% str_split(" ") %>% unlist %>% glue_collapse(sep="-")
-    url_path<-file.path(url, name)
-  }
-  if(publisher3 %in% c("wly", "emd", "snr", "tyr")) {
-    url_path<-file.path(url, url_tocken)
-  }
-  if(publisher3=="oup"){
-    url_path<-file.path(url, url_tocken, "issue")
-  }
-  if(publisher3=="aea"){
-    url_path<-file.path(url, url_tocken, "issues")
-  }
-  
-  if(publisher3=="cup"){
-    name<-str_to_lower(title) %>% str_split(" ") %>% unlist %>% glue_collapse(sep="-")
-    url_path<-file.path(url, name, "all-issues")
-  }
-  if(publisher3 %in% c("now", "ares")){
-    url_path<-url
-  }
+  url_path<-get_url_path(publisher3, url, title, url_tocken)
   if(url_path!=""){
     url_tag<-a(title, href=url_path, target="_blank") %>% as.character()
   }
   url_tag
 }
+generate_last_volume_url_tag<-function(last_volume_url){
+  a(last_volume_url, href=last_volume_url, target="_blank") %>% as.character()
+}
+#' Create url for Elsevier journals
+#'
+#' @param url 
+#' @param title 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+elr_url<-function(url, title){
+  title<-str_replace_all(title, pattern = "[[:punct:]]", replacement = "")
+  name<-str_to_lower(title) %>% str_split(" ") %>% unlist %>% glue_collapse(sep="-")
+  file.path(url, name)
+}
+  
