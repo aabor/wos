@@ -66,7 +66,7 @@ dfFromExcel <- function(xlsxBookFileName, xlsxSheetName, progress=NULL) {
 #' @examples
 #' saveWoSLibrary(dfWoS)
 saveWoSLibrary<-function(dfWoS){
-  file.copy(g$files$rdsWoS, g$files$rdsWoS_old)
+  file.copy(g$files$rdsWoS, g$files$rdsWoS_old, overwrite = T)
   "library backed up in file:" %c% g$files$rdsWoS_old %>% 
     echo("saveWoSLibrary", F)
   write_rds(dfWoS, g$files$rdsWoS)

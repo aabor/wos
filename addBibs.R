@@ -14,7 +14,7 @@
 #'
 #' @examples
 #' progress<-NULL
-#' deleteSourcePDFs<-F
+#' deleteSourcePDFs<-T
 #' dfWoS<-import_bibtex_and_pdf(dfWoS)
 import_bibtex_and_pdf<-function(dfWoS, progress=NULL, deleteSourcePDFs=F){
   "Started" %>%   
@@ -26,6 +26,11 @@ import_bibtex_and_pdf<-function(dfWoS, progress=NULL, deleteSourcePDFs=F){
   nrecordsAtStart<-nrow(dfWoS)
   rx <- "\\{(?:[^{}]*|(?R))*\\}" # matching balanced curly brackets
   files <- dir(g$paths$new_pdf, pattern = "\\.bib|\\.bibtex|\\.txt$", full.names = TRUE, recursive = TRUE)
+  if(length(files)==0){
+    "No new bib records found, aborting operation..." %>% 
+      echo("import_bibtex_and_pdf", F, progress)
+    return(dfWoS)    
+  }
   bibs <- map(files, function(f) {
     paste("extracting bib references", basename(f), "...") %>% 
       echo("import_bibtex_and_pdf", F, progress)
@@ -175,7 +180,7 @@ import_bibtex_and_pdf<-function(dfWoS, progress=NULL, deleteSourcePDFs=F){
     echo("import_bibtex_and_pdf", F, progress)
   "saving data.frame in .bibtex format\r\n" %>% 
     echo("import_bibtex_and_pdf", T, progress)
-  dfWoS %>% filter(is.na(key))
+  dfWoS %<>% filter(!is.na(key))
   
   saveDataFrameToBibTeX(dfWoS, g$files$bibWoS)
   "saving data.frame in .rds format\r\n" %>% 

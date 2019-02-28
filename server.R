@@ -527,6 +527,8 @@ shinyServer(function(input,output,clientData, session){
     rv$WholeLibraryStatDT<-d$libstat$general
     rv$DetailedLibraryStatDT<-d$libstat$detailed
     rv$PublisherStatDT<-d$libstat$publishers
+    rv$UpdatePlanDT<-d$libstat$updatePlan
+    rv$UpdateHistoryDT<-d$libstat$updateHistory
     rv$WoSDT<-getWoSDT(dfWoS)
     msg<-paste("Import finished", "Total steps", progress_nstep)
     showModal(modalDialog(
@@ -577,15 +579,14 @@ shinyServer(function(input,output,clientData, session){
               selection = 'single')
   })
   output$tableJournalUpdatePlan=DT::renderDataTable({
-    datatable(rv$UpdatePlanDT, rownames = F,
-              escape=F, selection="single"#,
-              #lengthMenu = list(c(5, 15, 60), c('5', '15', "60")),
-              #pageLength = 60
-    )
+    datatable(rv$UpdatePlanDT[, g$colnames$journal_update_plan], rownames = F,
+              escape=F, selection="single",
+              colnames = g$colnames$journal_update_plan_shown)
   })
   output$tableJournalUpdatesHistory=DT::renderDataTable({
-    datatable(rv$UpdateHistoryDT, rownames = F,
-              escape=F)
+    datatable(rv$UpdateHistoryDT[, g$colnames$journal_updates_history], rownames = F,
+              escape=F,
+              colnames = g$colnames$journal_updates_history_shown)
   })
   #table with publishers statistics
   output$tablePublisherStat = DT::renderDataTable({

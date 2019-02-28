@@ -283,10 +283,10 @@ get_journal_update_plan<-function(dfWoS, saveToFile=T){
                   select(mydbtitle, url_path, publisher3)
               , by=c("journal"="mydbtitle")) %>% 
     mutate(start_volume_url=file.path(url_path, "vol", start_volume)) %>%
-    mutate(start_volume_url=pmap_chr(list(start_volume_url), generate_last_volume_url_tag)) %>% 
-    select(journal, publisher3, start_volume, last_update, start_volume_url) %>% 
+    mutate(start_volume_url_formatted=pmap_chr(list(start_volume_url), generate_last_volume_url_tag)) %>% 
+    select(journal, publisher3, start_volume, last_update, start_volume_url_formatted, start_volume_url) %>% 
     mutate(last_update = format(last_update, "%Y-%m-%d %H:%M:%S", tz = g$tz))
-  write_csv(res, g$files$csvJournalUpdatePlan)
+  write_csv(res %>% select(-start_volume_url_formatted), g$files$csvJournalUpdatePlan)
   res
 }
 #' Get updates history

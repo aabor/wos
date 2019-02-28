@@ -189,12 +189,13 @@ tabLibraryImport<-tabItem(tabName="tabItemLibraryImport",
                         fluidRow(tabBox(title = "Whole library",
                                id="tabWholeLibrary", 
                                width = 12,
-                               tabPanel("Whole library statistics (Full text/Abstract/Total)",
-                                                     DT::dataTableOutput('tableWholeLibraryStat')),
                                tabPanel("Journal update plan",
                                         DT::dataTableOutput('tableJournalUpdatePlan')),
                                tabPanel("Updates history",
-                                        DT::dataTableOutput('tableJournalUpdatesHistory')))))
+                                        DT::dataTableOutput('tableJournalUpdatesHistory'), width=6),
+                               tabPanel("Whole library statistics (Full text/Abstract/Total)",
+                                        DT::dataTableOutput('tableWholeLibraryStat'))
+                        )))
 tabKeywordsAnalysis<-tabItem(tabName = "tabItemKeywordsAnalysis",
                              fluidRow(box(actionButton("computeKeyWordsFrequencies", "Compute key word frequencies"),
                                           width = 12)),
