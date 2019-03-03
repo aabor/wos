@@ -559,6 +559,7 @@ shinyServer(function(input,output,clientData, session){
   #table with statistics for separate journal
   output$tableSeparateJournalStat = DT::renderDataTable({
     journal_name<-input$separateJournal
+    #print(journal_name)
     datatable(rv$DetailedLibraryStatDT[[journal_name]], rownames = F,
               escape = F,
               options = list(
