@@ -305,3 +305,4 @@ get_updates_history_stat<-function(dfWoS){
     arrange(desc(updated)) %>% 
     mutate(updated = format(updated, "%Y-%m-%d %H:%M:%S", tz = g$tz))
 }
+

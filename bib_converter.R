@@ -131,9 +131,10 @@ correctAuthorName <- function(df, progress=NULL) {
 #' @export
 #'
 #' @examples
-#' (bib<-bibs[26])
-#' bib_to_df(bib, NULL)
-bib_to_df <- function(bib, progress=NULL) {
+#' idx=26
+#' (bib<-bibs[idx])
+#' bib_to_df(idx, bib, NULL)
+bib_to_df <- function(bib) {
   tryCatch({
     bib_type<-""
     pattern<-",\\s*[\\w]+\\s*=\\s*\\{[[:alnum:][:punct:]-]+\\}"
@@ -144,56 +145,44 @@ bib_to_df <- function(bib, progress=NULL) {
       bib_type<-"curly_braces"
       pattern_fields<-',\\s*([\\w]+)\\s*=\\s*\\"?\\{'
       #str_view_all(bib, pattern_fields)
-      pattern_values <- "\\{(?:[^{}]*|(?R))*\\}" # matching balanced curly brackets
+      pattern_values <- "=\\s*\\{(?:[^{}]*|(?R))*\\}" # matching balanced curly brackets
       fields <- str_match_all(bib, pattern_fields)[[1]][, 2]
       fields <- tolower(fields)
       fields_values<-regmatches(bib, gregexpr(pattern=pattern_values, bib, perl = TRUE)) %>% 
         unlist %>% 
-        str_remove_all(pattern="[{}]")
+        str_remove_all(pattern="[{}]") %>% 
+        str_squish()
     }
     pattern<-',[ \\w]+\\s*=\\s*\\"[[:alnum:][:punct:]-]+\\"'
     if(str_count(bib, pattern)>3){
       bib_type<-"double_quotes"
       pattern_fields<-',\\s*([\\w]+)\\s*=\\s*\\"'
-      pattern_values <- '\\"(?:[^"]*|(?R))*\\"' # matching balanced curly brackets
+      pattern_values <- '=\\s*\\"(?:[^"]*|(?R))*\\"' # matching balanced curly brackets
       fields <- str_match_all(bib, pattern_fields)[[1]][, 2]
       fields <- tolower(fields)
       fields_values<-regmatches(bib, gregexpr(pattern=pattern_values, bib, perl = TRUE)) %>% 
         unlist %>% 
-        str_remove_all(pattern='["]')
+        str_squish() %>% 
+        str_remove_all(pattern='^=') %>% 
+        str_squish() %>% 
+        str_remove_all(pattern='^"|"$') %>% 
+        str_squish()
     }
-    names(fields_values) <-fields
-    df<-bind_rows(fields_values)
-    df %<>% 
-      mutate(keywords=str_replace_all(keywords, ", ", " and "))
-    if (!('author' %in% names(df))) {
-      "No author in " %c% bib %>% 
-      echo("bib_to_df", F, progress, level = "error")
-      return(NA)
-    }
+    tibble(fs=fields, fvs=fields_values)
+    # names(fields_values) <-fields
+    # df<-bind_rows(fields_values)
+    # df %<>% 
+    #   mutate(keywords=str_replace_all(keywords, ", ", " and "))
+    # if (!('author' %in% names(df))) {
+    #   "No author in " %c% bib %>% 
+    #   echo("bib_to_df", F, progress, level = "error")
+    #   return(NA)
+    # }
   }, error = function(e) {
-    paste("Bib",bib, "caused error:", '\r\n') %>% 
-      echo("bib_to_df", F, progress, level = "error")
-    paste(e, '\r\n') %>% 
+    print(e)
+    "Bib: " %c% bib %c% " caused error: " %c% e %>% 
       echo("bib_to_df", F, progress, level = "error")
   })
-  fixed_names<-c("doi", "journal", "author", "year", "volume", "number", "month", "pages", "title", "keywords", "abstract")
-  map(fixed_names, function(n){
-    if(!n %in% names(df)){
-      df[[n]]<<-NA
-    }
-  })
-  if(is.na(df$title)){
-    "No title:" %c% glue_collapse(df$title, df$author, df$journal, sep=" ") %>% 
-      echo("bib_to_df", F, progress)
-    return(NA)
-  }else{
-    df %<>% 
-      mutate(journal=str_replace(journal, pattern="JCMS: ", replacement = ""))
-    df$title %>% 
-      echo("bib_to_df", F, progress)
-    df
-  }
 }
 #'Bib to APA style
 #'

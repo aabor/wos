@@ -14,7 +14,7 @@
 #'
 #' @examples
 #' progress<-NULL
-#' deleteSourcePDFs<-T
+#' deleteSourcePDFs<-F
 #' dfWoS<-import_bibtex_and_pdf(dfWoS)
 import_bibtex_and_pdf<-function(dfWoS, progress=NULL, deleteSourcePDFs=F){
   "Started" %>%   
@@ -67,11 +67,27 @@ import_bibtex_and_pdf<-function(dfWoS, progress=NULL, deleteSourcePDFs=F){
   jpublisher<-d$journals %>% 
     mutate(journal=mydbtitle) %>% 
     select(journal, publisher3)
-  dfLoadedBibs<-map_df(bibs, bib_to_df, progress) %>% 
+  bibs_frame<-tibble(doi=character(), 
+                     journal=character(), 
+                     author=character(), 
+                     year=integer(), 
+                     volume=integer(), 
+                     number=integer(), 
+                     month=character(), 
+                     pages=character(), 
+                     title=character(), 
+                     keywords=character(), 
+                     abstract=character())
+    
+  dfLoadedBibs<-tibble(idx=1:length(bibs), bibs_raw=!!bibs) %>% 
+    mutate(bibdf=pmap(list(bibs_raw), bib_to_df)) %>% 
+    select(-bibs_raw) %>% 
+    unnest() %>% 
+    spread(key=fs, value=fvs) %>% 
+    filter(!is.na(author) & !is.na(doi)) %>% 
+    bind_rows(bibs_frame) %>% 
     mutate(year=str_replace_all(year, pattern=non_digit, '')) %>% 
     select(doi, journal, author, year, volume, number, month, pages, title, keywords, abstract) %>% 
-    subset(!is.na(author)) %>% 
-    subset(!is.na(doi)) %>% 
     mutate(doi=str_replace(doi, pattern="https://doi.org/", replacement = "")) %>% 
     mutate(doi=str_trim(doi),
            author=str_trim(author),
@@ -86,6 +102,7 @@ import_bibtex_and_pdf<-function(dfWoS, progress=NULL, deleteSourcePDFs=F){
            abstract=str_trim(abstract),
            file=NA) %>% 
     mutate(journal=  str_replace_all(journal, "[^[[:alpha:]]|[[:punct:]]|[[:space:]]]", '')) %>% 
+    mutate(journal=str_replace(journal, pattern="JCMS: ", replacement = "")) %>% 
     mutate(pages=str_replace_all(pages, pattern = "[^\\d]+", '-'),
            journal=str_replace_all(journal, pattern = '&', 'and'),
            abstract=str_replace_all(abstract, "^(?:Abstract |ABSTRACT|Abstract)", '')) %>% 
