@@ -123,67 +123,6 @@ correctAuthorName <- function(df, progress=NULL) {
     echo("correctAuthorName", F, progress)
   df
 }
-#' Converts bibtex bibliography record to data.frame
-#'
-#' @param bib string with bibtex record
-#'
-#' @return data.frame
-#' @export
-#'
-#' @examples
-#' idx=26
-#' (bib<-bibs[idx])
-#' bib_to_df(idx, bib, NULL)
-bib_to_df <- function(bib) {
-  tryCatch({
-    bib_type<-""
-    pattern<-",\\s*[\\w]+\\s*=\\s*\\{[[:alnum:][:punct:]-]+\\}"
-    #str_view_all(bib, pattern)
-    fields<-""
-    fields_values<-""
-    if(str_count(bib, pattern)>3){
-      bib_type<-"curly_braces"
-      pattern_fields<-',\\s*([\\w]+)\\s*=\\s*\\"?\\{'
-      #str_view_all(bib, pattern_fields)
-      pattern_values <- "=\\s*\\{(?:[^{}]*|(?R))*\\}" # matching balanced curly brackets
-      fields <- str_match_all(bib, pattern_fields)[[1]][, 2]
-      fields <- tolower(fields)
-      fields_values<-regmatches(bib, gregexpr(pattern=pattern_values, bib, perl = TRUE)) %>% 
-        unlist %>% 
-        str_remove_all(pattern="[{}]") %>% 
-        str_squish()
-    }
-    pattern<-',[ \\w]+\\s*=\\s*\\"[[:alnum:][:punct:]-]+\\"'
-    if(str_count(bib, pattern)>3){
-      bib_type<-"double_quotes"
-      pattern_fields<-',\\s*([\\w]+)\\s*=\\s*\\"'
-      pattern_values <- '=\\s*\\"(?:[^"]*|(?R))*\\"' # matching balanced curly brackets
-      fields <- str_match_all(bib, pattern_fields)[[1]][, 2]
-      fields <- tolower(fields)
-      fields_values<-regmatches(bib, gregexpr(pattern=pattern_values, bib, perl = TRUE)) %>% 
-        unlist %>% 
-        str_squish() %>% 
-        str_remove_all(pattern='^=') %>% 
-        str_squish() %>% 
-        str_remove_all(pattern='^"|"$') %>% 
-        str_squish()
-    }
-    tibble(fs=fields, fvs=fields_values)
-    # names(fields_values) <-fields
-    # df<-bind_rows(fields_values)
-    # df %<>% 
-    #   mutate(keywords=str_replace_all(keywords, ", ", " and "))
-    # if (!('author' %in% names(df))) {
-    #   "No author in " %c% bib %>% 
-    #   echo("bib_to_df", F, progress, level = "error")
-    #   return(NA)
-    # }
-  }, error = function(e) {
-    print(e)
-    "Bib: " %c% bib %c% " caused error: " %c% e %>% 
-      echo("bib_to_df", F, progress, level = "error")
-  })
-}
 #'Bib to APA style
 #'
 #'Convert one row data frame bibliography to APA style record in HTML format

@@ -27,9 +27,9 @@ import_bibtex_and_pdf<-function(dfWoS, progress=NULL, deleteSourcePDFs=F){
   rx <- "\\{(?:[^{}]*|(?R))*\\}" # matching balanced curly brackets
   files <- dir(g$paths$new_pdf, pattern = "\\.bib|\\.bibtex|\\.txt$", full.names = TRUE, recursive = TRUE)
   if(length(files)==0){
-    "No new bib records found, aborting operation..." %>% 
+    "No new bib records found, aborting operation..." %>%
       echo("import_bibtex_and_pdf", F, progress)
-    return(dfWoS)    
+    return(dfWoS)
   }
   bibs <- map(files, function(f) {
     paste("extracting bib references", basename(f), "...") %>% 
@@ -63,50 +63,33 @@ import_bibtex_and_pdf<-function(dfWoS, progress=NULL, deleteSourcePDFs=F){
   paste('converting', length(bibs), '.bibtex records to data.frame...') %>% 
     echo("import_bibtex_and_pdf", F, progress)
   
-  non_digit <- "[^\\d]"
-  jpublisher<-d$journals %>% 
-    mutate(journal=mydbtitle) %>% 
-    select(journal, publisher3)
-  bibs_frame<-tibble(doi=character(), 
-                     journal=character(), 
-                     author=character(), 
-                     year=integer(), 
-                     volume=integer(), 
-                     number=integer(), 
-                     month=character(), 
-                     pages=character(), 
-                     title=character(), 
-                     keywords=character(), 
-                     abstract=character())
-    
   dfLoadedBibs<-tibble(idx=1:length(bibs), bibs_raw=!!bibs) %>% 
-    mutate(bibdf=pmap(list(bibs_raw), bib_to_df)) %>% 
+    mutate(bibdf=pmap(list(bibs_raw), 
+                      ~tibble(fs=str_match_all(..1, ',\\s*([\\w]+)\\s*=\\s*\\"?\\{?')[[1]][, 2] %>% 
+                                                tolower, 
+                              fvs=regmatches(..1, gregexpr(pattern='=\\s*\\"?\\{?(?:[^"{}]*|(?R))*\\}?\\"?', ..1, perl = TRUE)) %>% 
+                                unlist %>% 
+                                str_remove_all(pattern='=\\s?\\"?\\{?|\\}?\\"?') %>% 
+                                str_squish))) %>% 
     select(-bibs_raw) %>% 
     unnest() %>% 
     spread(key=fs, value=fvs) %>% 
     filter(!is.na(author) & !is.na(doi)) %>% 
-    bind_rows(bibs_frame) %>% 
-    mutate(year=str_replace_all(year, pattern=non_digit, '')) %>% 
-    select(doi, journal, author, year, volume, number, month, pages, title, keywords, abstract) %>% 
-    mutate(doi=str_replace(doi, pattern="https://doi.org/", replacement = "")) %>% 
-    mutate(doi=str_trim(doi),
-           author=str_trim(author),
-           year=str_trim(year),
-           volume=str_trim(volume),
-           number=str_trim(number),
-           month=str_trim(month),
-           pages=str_trim(pages),
-           journal=str_trim(journal),
-           title=str_trim(title),
-           keywords=str_trim(keywords),
-           abstract=str_trim(abstract),
-           file=NA) %>% 
-    mutate(journal=  str_replace_all(journal, "[^[[:alpha:]]|[[:punct:]]|[[:space:]]]", '')) %>% 
-    mutate(journal=str_replace(journal, pattern="JCMS: ", replacement = "")) %>% 
+    bind_rows(tibble(doi=character(), journal=character(), author=character(), 
+                     year=integer(), volume=integer(), number=integer(), 
+                     month=character(), pages=character(), title=character(), 
+                     keywords=character(), abstract=character(), file=character())) %>% 
+    mutate(year=str_replace_all(year, pattern="[^\\d]", ''),
+           doi=str_replace(doi, pattern="https://doi.org/", replacement = "")) %>% 
+    map_dfc(str_trim) %>% 
+    mutate(journal=str_replace_all(journal, "[^[[:alpha:]]|[[:punct:]]|[[:space:]]]", '')) %>% 
+    mutate(journal=str_replace(journal, pattern = "JCMS: ", replacement = "")) %>% 
     mutate(pages=str_replace_all(pages, pattern = "[^\\d]+", '-'),
            journal=str_replace_all(journal, pattern = '&', 'and'),
-           abstract=str_replace_all(abstract, "^(?:Abstract |ABSTRACT|Abstract)", '')) %>% 
-    left_join(jpublisher, by="journal") %>% 
+           abstract=str_replace_all(abstract, "^(?i)abstract", '')) %>% 
+    left_join(d$journals %>% 
+                mutate(journal=mydbtitle) %>% 
+                select(journal, publisher3), by="journal") %>% 
     correctAuthorName(progress) %>% 
     createBibKeys(progress) %>% 
     mutate(year=as.numeric(year),
