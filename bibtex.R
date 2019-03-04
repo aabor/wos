@@ -9,11 +9,11 @@
 #' @export
 #'
 #' @examples
-#' df<-dfWoSExport[2,]
+#' df<-dfWoSExport
 #' convertDataFrameToBibTexHTML(df)
 convertDataFrameToBibTexHTML<-function(df){
   convertDataFrameToBibTex(df) %>% 
-    mutate(bib_item=str_replace_all(bib_item, ",\n", ",<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;")) %>% 
+    mutate(bib_item=str_replace_all(bib_item, "^\n|,\n", ",<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;")) %>% 
     pull(bib_item) %>%     
     HTML
 }
@@ -25,48 +25,23 @@ convertDataFrameToBibTexHTML<-function(df){
 #' @export
 #'
 #' @examples
-#' df<-dfWoS[3,]
-#' res<-convertDataFrameToBibTex(df)
+#' df<-dfWoSExport
+#' convertDataFrameToBibTex(df)
 #' res%>% class
 #' str(res)
 #' res$bib_item
 convertDataFrameToBibTex<-function(df){
   'Start converting data frame...' %>% 
     echo("convertDataFrameToBibTex", T)
-  df %<>% 
+  df %>% 
     select(key, doi, publisher3, file, journal, author, year, volume, month, 
-           pages, title, keywords, abstract)
-  (cols <- names(df))
-  (sep_cols <- paste('sep', cols, sep = '_'))
-  sep_cols <- c('sep_first', sep_cols)
-  (first_col <- first(sep_cols))
-  (last_col <- last(sep_cols))
-  n <- nrow(df)
-  df_sep <- map(1:length(sep_cols), function(i) {
-    cname<-sep_cols[i]
-    if (cname == first_col) {
-      df <- data.frame(cname = rep('@Article{', n))
-    } else {
-      if (cname == 'sep_key') {
-        df <- data.frame(cname = rep(paste(',\n    ', cols[i], ' = {', sep = ''), n))
-      } else {
-        if (cname == last_col) {
-          df <- data.frame(cname = rep('},\n}', n))
-        } else {
-          df <- data.frame(cname = rep(paste('},\n    ', cols[i], ' = {', sep = ''), n))
-        }
-      }
-    }
-    names(df) <- cname
-    df
-  }) %>% bind_cols
-  df_bib <- bind_cols(df, df_sep)
-  (id <- c(seq_along(cols), 0:length(cols) + 0.5))
-  cols_ext <- c(cols, sep_cols)
-  cols_ordered <- cols_ext[order(id)]
-  df_bib <- df_bib[, cols_ordered]
-  bibs <- unite(df_bib, bib_item, 1:length(cols_ordered), sep = '') %>% as.data.frame
-  bibs
+           pages, title, keywords, abstract) %>% 
+    gather(key="fs", value="fvs", doi:abstract) %>% 
+    mutate(kv=fs %c% " = {" %c% fvs %c% "}") %>% 
+    group_by(key) %>% 
+    summarise(kvs=glue_collapse(kv, sep=",\n")) %>% 
+    mutate(bib_item='\n@Article{' %c% key %c% ", " %c% kvs %c% "}") %>% 
+    select(bib_item)
 }
 #' Export to JabRef (".bibtex")
 #'
@@ -161,7 +136,7 @@ get_rmarkdown_reference<-function(key, author, title, keywords){
 #' convertDataFrameToRMarkdownHTML(dfWoSExport)
 convertDataFrameToRMarkdownHTML<-function(dfWoSExport){
   convertDataFrameToRMarkdown(dfWoSExport) %>% 
-    lapply(str_replace_all,"\r\n", "<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;") %>% 
+    map(str_replace_all,"\r\n", "<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;") %>% 
     glue_collapse(sep="<br/>") %>% 
     HTML
 }
