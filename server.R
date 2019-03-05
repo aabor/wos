@@ -499,7 +499,15 @@ shinyServer(function(input,output,clientData, session){
     journal<-rv$WholeLibraryStatDT[input$tableWholeLibraryStat_row_last_clicked,"journal_name"]
   })
   observeEvent(journal_cur_selection(), {
-      updateSelectInput(session, "separateJournal", selected = journal_cur_selection())
+      updateSelectInput(session, "separateJournal", 
+                        selected = journal_cur_selection())
+  })
+  journal_cur_selection_update_plan<-reactive({
+    journal<-rv$UpdatePlanDT[input$tableJournalUpdatePlan_row_last_clicked,"journal"]
+  })
+  observeEvent(journal_cur_selection_update_plan(), {
+    updateSelectInput(session, "separateJournal", 
+                      selected = journal_cur_selection_update_plan())
   })
   observeEvent(input$tablePublisherStat_row_last_clicked, {
     s = input$tablePublisherStat_row_last_clicked
