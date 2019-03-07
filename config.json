@@ -31,7 +31,7 @@
     "top_researchers_dt": ["year", "l_name", "fm_name", "affiliation"],
     "top_researchers_dt_shown": ["Year", "Last Name", "Family Name", "Affiliation"],
     "cjcs_main": ["url_title","jacro", "publisher3", "quartile", "top10"],
-    "export_records_summary": ["Journal", "Jacro", "Nrd", "Jsc", "MnAsc"],
+    "export_records_summary": ["Journal", "Jacro", "Nrd", "Jsc", "MnAsc", "Updated"],
     "journal_update_plan":["journal", "publisher3", "start_volume", "last_update", "start_volume_url_formatted"],
     "journal_update_plan_shown":["Journal", "Publisher", "Start vol", "Updated", "Start Volume URL"],
     "journal_updates_history":["updated", "n"],

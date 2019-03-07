@@ -183,14 +183,19 @@ highlight_terms<-function(text, suggested_terms_vector){
 #' @examples
 #' df<-dfWoSExport
 get_export_records_summary<-function(df){
+  Js_aug<-d$journals %>% select(mydbtitle, url, url_tocken) %>% 
+    left_join(d$libstat$general %>% 
+                select(journal_name, updated), by=c("mydbtitle"="journal_name")) %>% 
+    rename(journal=mydbtitle)
+    
   df%>%   
-    select(-url) %>% 
-    left_join(d$journals %>% select(title, url, url_tocken), by=c("journal"="title")) %>% 
+    select(-url, -updated) %>% 
+    left_join(Js_aug, by="journal") %>% 
     mutate(journal=pmap_chr(list(journal, publisher3, url, url_tocken), generate_journal_url_tag)) %>% 
-    select(journal, publisher3, jacro, jscore, ascore) %>% 
-    group_by(journal, publisher3, jacro, jscore) %>% 
+    select(journal, publisher3, jacro, jscore, ascore, updated) %>% 
+    group_by(journal, publisher3, jacro, jscore, updated) %>% 
     summarise(nrecords=n(),
               mnascore=mean(ascore)) %>% 
-    select(journal, publisher3, jacro, nrecords, jscore, mnascore) %>% 
+    select(journal, publisher3, jacro, nrecords, jscore, mnascore, updated) %>% 
     arrange(desc(nrecords))
 }
