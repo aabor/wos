@@ -528,8 +528,13 @@ shinyServer(function(input,output,clientData, session){
     # main task
     progress$set(message = "Importing research papers", value = 0)
     cat("Start importing research papers on server side\n")
-    nrow_old<-nrow(dfWoS)
+    nrecord_old<-nrow(dfWoS)
+    npdf_old<-sum(!is.na(dfWoS$file))
     dfWoS<<-import_bibtex_and_pdf(dfWoS, progress, input$deleteSourcePDFs)
+    nrecord<-nrow(dfWoS)
+    npdf<-sum(!is.na(dfWoS$file))
+    new_records<-nrecord - nrecord_old
+    new_pdf<-npdf - npdf_old
     d<<-update_wosdoc(d, dfWoS)
     msg<-"import folder is empty"
     rv$WholeLibraryStatDT<-d$libstat$general
@@ -538,7 +543,10 @@ shinyServer(function(input,output,clientData, session){
     rv$UpdatePlanDT<-d$libstat$updatePlan
     rv$UpdateHistoryDT<-d$libstat$updateHistory
     rv$WoSDT<-getWoSDT(dfWoS)
-    msg<-paste("Import finished", "Total steps", progress_nstep)
+    msg<-"Imported " %c% new_records %c% " new records and " %c%
+      new_pdf %c% " new pdf documents. Total records " %c% nrecord %c%
+      " with " %c% npdf %c% " pdf documents. Total steps " %c%
+      progress_nstep
     showModal(modalDialog(
       title = "Note",
       msg,
