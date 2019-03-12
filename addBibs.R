@@ -62,15 +62,24 @@ import_bibtex_and_pdf<-function(dfWoS, progress=NULL, deleteSourcePDFs=F){
   }
   paste('converting', length(bibs), '.bibtex records to data.frame...') %>% 
     echo("import_bibtex_and_pdf", F, progress)
-  
+  counter <- 0
   dfLoadedBibs<-tibble(idx=1:length(bibs), bibs_raw=!!bibs) %>% 
-    mutate(bibdf=pmap(list(bibs_raw), 
-                      ~tibble(fs=str_match_all(..1, ',\\s*([\\w]+)\\s*=\\s*\\"?\\{?')[[1]][, 2] %>% 
-                                                tolower, 
-                              fvs=regmatches(..1, gregexpr(pattern='=\\s*\\"?\\{?(?:[^"{}]*|(?R))*\\}?\\"?', ..1, perl = TRUE)) %>% 
-                                unlist %>% 
-                                str_remove_all(pattern='=\\s?\\"?\\{?|\\}?\\"?') %>% 
-                                str_squish))) %>% 
+    mutate(bibdf=pmap(list(bibs_raw), function(bib){
+      tryCatch({
+        counter<-counter+1
+        tibble(fs=str_match_all(bib, ',\\s*([\\w]+)\\s*=\\s*\\"?\\{?')[[1]][, 2] %>% 
+                 tolower, 
+              fvs=regmatches(bib, gregexpr(pattern='=\\s*\\"?\\{?(?:[^"{}]*|(?R))*\\}?\\"?', bib, perl = TRUE)) %>% 
+                unlist %>% 
+                str_remove_all(pattern='=\\s?\\"?\\{?|\\}?\\"?') %>% 
+                str_squish)
+        }, error=function(e){
+                  echo(e)
+                  echo(bib)
+                  echo("bib position: " %c% counter)
+                  tibble(fs=character(), fvs=character())
+                })
+    })) %>% 
     select(-bibs_raw) %>% 
     unnest() %>% 
     spread(key=fs, value=fvs) %>% 
