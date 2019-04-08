@@ -471,6 +471,7 @@ shinyServer(function(input,output,clientData, session){
   })
   #table with journal SSCI powered by Scopus
   output$tableJournals = DT::renderDataTable({
+    if(is.null(d$colnames$ssci_dt))return(NULL)
     datatable(rv$JournalsDT[, d$colnames$ssci_dt], rownames = F,
               colnames = d$colnames$ssci_dt_shown,
               escape = F,

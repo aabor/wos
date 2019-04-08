@@ -271,8 +271,9 @@ createResearcherDF <- function(progress=NULL) {
 #' res$jacro %>% unique()
 #' res %>% filter(is.na(key))
 getWoSDT <- function(dfWoS) {
+  if(is.null(dfWoS))return(NULL)
   dfWoS %>% 
-    left_join(d$citeScores, by="key") %>% 
+    left_join(d$libstat$jcitescores %>% select(-publisher3, -url), by=c('journal'="title")) %>% 
     left_join(d$authors$authorScores, by="key") %>% 
     mutate(updated = format(updated, "%Y-%m-%d %H:%M:%S", tz = g$tz),
            authors = str_replace_all(author, " and ", "; ")) %>%
@@ -384,11 +385,14 @@ addResearcherScoresDF <- function(d, dfWoS, progress=NULL) {
   d$authors$verbR<-semi_join(df, df_verb, by = c('author', 'year')) %>% 
     select(year, author) %>%
     distinct(year, author) %>%
-    mutate(year = str_c('Y', year)) %>%
-    group_by(year) %>%
-    mutate(idx = 1:n()) %>%
-    ungroup() %>%
-    spread(year, author)
+    mutate(year = str_c('Y', year))
+  if(nrow(d$authors$verbR)>0){
+    d$authors$verbR%>%
+      group_by(year) %>%
+      mutate(idx = 1:n()) %>%
+      ungroup() %>%
+      spread(year, author)
+  }
   msg<-'created verbose researcher`s table...' %>% 
     echo("addResearcherScoresDF", T, progress)
   d$authors$topR<-semi_join(df, df_r, by = c('author', 'year')) %>% 
@@ -396,10 +400,13 @@ addResearcherScoresDF <- function(d, dfWoS, progress=NULL) {
     select(year, author) %>%
     distinct(year, author) %>%
     mutate(year = str_c('Y', year)) %>%
-    group_by(year) %>%
-    mutate(idx = 1:n()) %>%
-    ungroup() %>%
-    spread(year, author)
+    group_by(year)
+  if(nrow(d$authors$topR)>0){
+    d$authors$topR%<>%
+      mutate(idx = 1:n()) %>%
+      ungroup() %>%
+      spread(year, author)
+  }
   msg<-'created top researcher`s table...' %>% 
     echo("addResearcherScoresDF", T, progress)
   d

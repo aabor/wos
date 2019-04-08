@@ -13,11 +13,13 @@ source("check_updates.R")
 source("wosdoc.R")
 g<-NULL
 d<-NULL
+dfWoS<-NULL
 # home directory is mounted as current user documents
 # set variables
 app_path<-getwd()
 progress_nstep<-0
 progress_job<-0
+
 # config vars
 #g$tz<-"Europe/Moscow"
 
@@ -28,16 +30,21 @@ configure_log(g, logger_name = "wos")
 #   group_by(year) %>% 
 #   summarise(n=n()) %>% 
 #   arrange(desc(year))
+#write_rds(dfWoS, g$files$rdsWoS)
+if(file.exists(g$files$rdsWoS)){
+  dfWoS<-read_rds(g$files$rdsWoS)
+}
 
 document_path<-file.path(g$paths$home, "wosdoc.rds")
 if(file.exists(document_path)){
   d<-read_rds(document_path)
 }else{
   d<-create_wosdoc()
+  if(!is.null(dfWoS)){
+    d<-update_wosdoc(d, dfWoS)
+  }
   #write_rds(d, document_path)
 }
-#write_rds(dfWoS, g$files$rdsWoS)
-dfWoS<-read_rds(g$files$rdsWoS)
 #dfWoS %>% filter(is.na(key))
 # dfWoS$jscore<-NULL
 # dfWoS$jacro<-NULL

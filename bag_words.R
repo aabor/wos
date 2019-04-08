@@ -11,6 +11,7 @@
 #' @export
 #'
 #' @examples
+#' df<-WoSDT
 #' dfKeywords<-createKeywordsDF(WoSDT)
 createKeywordsDF <- function(df) {
   'Transforming data frame, creating separate keywords...' %>% 
@@ -35,6 +36,7 @@ createKeywordsDF <- function(df) {
 #'
 #' @examples
 #' dfKeywords <- createKeywordsDF(WoSDT)
+#' byyear = T
 #' (dfKeywordModifiedScore<-computeKeywordScores(dfKeywords))
 #' (dfKeywordModifiedScoreByYear<-computeKeywordScores(dfKeywords, byyear=T))
 computeKeywordScores <- function(dfKeywords, byyear = F) {
@@ -125,7 +127,9 @@ wordcloudKeywordsMscore <- function(dfKeywordModifiedScore) {
             random.order = FALSE, rot.per = .15, 
             colors=pal)
 }
-
+getSortingYear<-function(df){
+  sort_year<- "Y" %c% df$year %>% unique() %>% nth(2) 
+}
 #' Keyword frequencies by year table
 #'
 #' @param dfKeywordFrequencies data.frame
@@ -138,12 +142,17 @@ wordcloudKeywordsMscore <- function(dfKeywordModifiedScore) {
 #' createKeywordFrequenciesByYear(dfKeywordModifiedScoreByYear, 2015)
 createKeywordFrequenciesByYear <- function(dfKeywordModifiedScoreByYear, stop_year) {
   if(is.null(dfKeywordModifiedScoreByYear))return(NULL)
-  dfKeywordModifiedScoreByYear %>% 
+  ret<-dfKeywordModifiedScoreByYear %>% 
     select(keyword, year, n) %>% 
     filter(year > stop_year) %>%
     mutate(year = str_c('Y', year, sep = '')) %>%
-    spread(year, n) %>%
-    arrange(desc(Y2017))
+    spread(year, n)
+  sort_year<-getSortingYear(dfKeywordModifiedScoreByYear)
+  if(length(sort_year)>2){
+    ret %<>% 
+      arrange(desc(!!sort_year))
+  }
+  ret
 }
 #' Keyword modified score by year table
 #'
@@ -154,15 +163,21 @@ createKeywordFrequenciesByYear <- function(dfKeywordModifiedScoreByYear, stop_ye
 #' @export
 #'
 #' @examples
+#' stop_year<-2007
 #' createKeywordModifiedScoresByYear(dfKeywordModifiedScoreByYear, 2015)
 createKeywordModifiedScoresByYear <- function(dfKeywordModifiedScoreByYear, stop_year) {
   if(is.null(dfKeywordModifiedScoreByYear))return(NULL)
-  dfKeywordModifiedScoreByYear %>% 
+  ret<-dfKeywordModifiedScoreByYear %>% 
     select(keyword, year, mscore) %>% 
     filter(year > stop_year) %>%
     mutate(year = str_c('Y', year, sep = '')) %>%
-    spread(year, mscore) %>%
-    arrange(desc(Y2017))
+    spread(year, mscore)
+  sort_year<-getSortingYear(dfKeywordModifiedScoreByYear)
+  if(length(sort_year)>2){
+    ret %<>% 
+      arrange(desc(!!sort_year))
+  }
+  ret
 }
 cleanText <- function(text) {
   text %>%

@@ -19,8 +19,10 @@
 import_bibtex_and_pdf<-function(dfWoS, progress=NULL, deleteSourcePDFs=F){
   "Started" %>%   
     echo("import_bibtex_and_pdf", T, progress)
-  dfWoS %<>% 
-    mutate(doi=str_to_lower(doi))
+  if(!is.null(dfWoS)){
+    dfWoS %<>% 
+      mutate(doi=str_to_lower(doi))
+  }
   "loading bibliogrpaphy files from disk..." %>% 
     echo("import_bibtex_and_pdf", T, progress)
   nrecordsAtStart<-nrow(dfWoS)
@@ -113,13 +115,15 @@ import_bibtex_and_pdf<-function(dfWoS, progress=NULL, deleteSourcePDFs=F){
   nbefore<-nrow(dfWoS)
   records_to_update<-intersect(dfLoadedBibs$key, dfWoS$key)
   nrecords_to_update<-length(records_to_update)
-  dfWoS<-dfWoS %>% 
-    filter(!(key %in% records_to_update)) %>% 
-    filter(!is.na(key)) %>% 
-    bind_rows(dfLoadedBibs) %>% 
-    distinct(key, .keep_all = T) %>% 
-    filter(!is.na(journal)) %>% 
-    mutate(doi=str_to_lower(doi))
+  if(!is.null(dfWoS)){
+    dfWoS<-dfWoS %>% 
+      filter(!(key %in% records_to_update)) %>% 
+      filter(!is.na(key)) %>% 
+      bind_rows(dfLoadedBibs) %>% 
+      distinct(key, .keep_all = T) %>% 
+      filter(!is.na(journal)) %>% 
+      mutate(doi=str_to_lower(doi))
+  }
   nafter<-nrow(dfWoS)
   paste(nbefore - nafter, "records with duplicate keys have been deleted", nrecords_to_update, "will be updated\r\n") %>% 
     echo("import_bibtex_and_pdf", F, progress)
@@ -142,12 +146,18 @@ import_bibtex_and_pdf<-function(dfWoS, progress=NULL, deleteSourcePDFs=F){
   df_filename_doi<-get_filename_doi(files, progress)
   "adding full text file paths to loaded bibliography records\r\n" %>% 
     echo("import_bibtex_and_pdf", F, progress)
-  dfNewPDFs<-dfWoS %>% 
-    select(-file) %>% 
-    right_join(df_filename_doi, by="doi") %>% 
-    mutate(file_from=ifelse(is.na(file), NA, file.path(g$paths$new_pdf, basename(file))),
-           file_to=ifelse(is.na(file), NA,file.path(g$paths$pdf, paste(key,".pdf", sep="")))) %>% 
-    mutate(file=ifelse(is.na(file), NA,paste(key,".pdf", sep="")))
+  if(!is.null(dfWoS)){
+    dfNewPDFs<-dfWoS %>% 
+      select(-file) %>% 
+      right_join(df_filename_doi, by="doi")
+  }else{
+    dfWoS<-dfNewPDFs
+  }
+  if(!is.null(dfWoS)){
+    dfWoS %<>% mutate(file_from=ifelse(is.na(file), NA, file.path(g$paths$new_pdf, basename(file))),
+                      file_to=ifelse(is.na(file), NA,file.path(g$paths$pdf, paste(key,".pdf", sep="")))) %>% 
+      mutate(file=ifelse(is.na(file), NA,paste(key,".pdf", sep=""))) 
+  }
   if(nrow(dfNewPDFs)>0){
       if(deleteSourcePDFs){
         "deleting source pdf files..." %>% 
@@ -178,10 +188,15 @@ import_bibtex_and_pdf<-function(dfWoS, progress=NULL, deleteSourcePDFs=F){
   titles_to_delete<-c("Editorial","Guest Editorial", 
                       "Special Issue Editors Introduction",
                       "Editors Note","Comment","Preface")
-  dfWoS<-dfWoS %>% 
-    filter(!(title %in% titles_to_delete)) %>% 
-    distinct(key, .keep_all = T) %>% 
-    check_pdf_file_references(progress)
+  if(!is.null(dfWoS)){
+    dfWoS<-dfWoS %>% 
+      filter(!(title %in% titles_to_delete)) %>% 
+      distinct(key, .keep_all = T) %>% 
+      check_pdf_file_references(progress)
+  }else{
+    
+  }
+    
   nrecordsAtEnd<-nrow(dfWoS)
   nNewRecords<-nrecordsAtEnd-nrecordsAtStart
   paste("In old data base", nrecordsAtStart, "records, in updated data base", nrecordsAtEnd,
@@ -189,8 +204,9 @@ import_bibtex_and_pdf<-function(dfWoS, progress=NULL, deleteSourcePDFs=F){
     echo("import_bibtex_and_pdf", F, progress)
   "saving data.frame in .bibtex format\r\n" %>% 
     echo("import_bibtex_and_pdf", T, progress)
-  dfWoS %<>% filter(!is.na(key))
-  
+  if(!is.null(dfWoS)){
+    dfWoS %<>% filter(!is.na(key))
+  }
   saveDataFrameToBibTeX(dfWoS, g$files$bibWoS)
   "saving data.frame in .rds format\r\n" %>% 
     echo("import_bibtex_and_pdf", F, progress)
