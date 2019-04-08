@@ -1,0 +1,18 @@
+version: '3.5'
+services:
+  rstudio-wos: 
+    image: aabor/rstudio-text
+    volumes:
+      - $PWD:/home/rstudio/wos
+      - $PWD/rstudio:/home/rstudio  
+      - $PWD/Documents:/home/rstudio/Documents
+      - $PWD/srv:/srv/shiny-server 
+      - $PWD/srv/.log:/var/log/shiny-server
+    ports:
+      - "8795:8787"
+      - "3845:3838"
+    environment:
+      - TZ="EEST"
+      - USER=rstudio
+      - PASSWORD=123
+    restart: "on-failure:30"
